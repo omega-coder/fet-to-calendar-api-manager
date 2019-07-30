@@ -8,9 +8,11 @@ from google.auth.transport.requests import Request
 from pprint import pprint
 
 
+
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def main():
+    
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
@@ -21,15 +23,18 @@ def main():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'client_creds.json', SCOPES)
+                'client_secrets.json', SCOPES)
             creds = flow.run_local_server(port=0)
         with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
-    service = build('calendar', 'v3', credentials=creds)
+    pprint(creds)
+    print(dir(creds))
 
+    service = build('calendar', 'v3', credentials=creds)
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    
+
+
     page_token = None
     while True:
         calendar_list = service.calendarList().list(pageToken=page_token).execute()
