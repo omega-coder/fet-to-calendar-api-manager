@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FET TO CALENDAR API</title>
+    <link href="//cdn.muicss.com/mui-0.9.39/css/mui.min.css" rel="stylesheet" type="text/css" />
+    <script src="//cdn.muicss.com/mui-0.9.39/js/mui.min.js"></script>
+    <style>
+    .full-width {
+       width: 100%;
+    }
+    footer {
+      box-sizing: border-box;
+      height: 100px;
+      padding-top: 45px;
+    }
+    </style>
+  </head>
+  <body>
+    <header class="mui-appbar mui--z1">
+      <nav class="mui-container-fluid">
+        <table width="100%" cellspacing="0">
+        <tbody>
+          <tr class="mui--appbar-height">
+            <td class="mui--text-title"><a class="mui--text-white" href="{{url_for('index')}}">FET to calendar</a></td>
+            <td class="mui--text-right">
+                <ul class="mui-list--inline mui--text-body2">
+                    <li>{% if user_data %}
+                          <span>{{ user_data.name }}</span>
+                        {% endif %}
+                    </li>
+                    <li>
+                        <a class="mui-btn mui-btn--raised" href="{{url_for('logout')}}">Logout</a>
+                    </li>
+                </ul>     
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </nav>
+    </header>
+    <div id="content" class="mui-container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="mui-row">&nbsp;</div>
+      <div class="mui-row messages">
+          {% for category, message in messages %}
+          {% if category == 'error' %}
+          <div class="mui-panel mui--bg-danger mui--text-white">
+          {% else %}
+          <div class="mui-panel">
+          {% endif %}
+              {{ message }}
+          {% endfor %}
+          </div>
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock content %}
+    </div>
+    <div class="mui-row">&nbsp;</div>
+    <footer class="mui--bg-primary mui--text-white">
+      <div class="mui-container mui--text-center">
+        <strong>Fet-to-calendar</strong> is made with 💖 by 
+        <a class="mui--text-white" href="https://omega-coder.me">Omega-Coder</a>.
+      </div>
+    </footer>
+  </body>
+</html>
