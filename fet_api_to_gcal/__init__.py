@@ -119,10 +119,9 @@ def token_expired(_):
 
 @app.errorhandler(InvalidGrantError)
 def invalid_grant(_):
-    def current_app.blueprints['google'].token
-    flash("InvalidGrant Error", category="error")
+    del current_app.blueprints['google'].token
+    flash(("InvalidGrant Error"), category="error")
     return redirect(url_for('index'))
-
 
 
 @app.route("/api/v1/calendars")
@@ -144,13 +143,13 @@ def calendars():
     return jsonify(calendars)
 
 
-@app.route('/api/v1/calendar/add/<str:calendar_name>')
+@app.route('/api/v1/calendar/add/<string:calendar_name>')
 @login_required(google)
-def new_calendar():
+def new_calendar(calendar_name):
     if not google.authorized:
         return flask.redirect(url_for('google.login'))
 
-    calendar__ = {'summary': 'New_calendar', 'timeZone': 'Africa/Algiers'}
+    calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
 
     resp = google.post("/calendar/v3/calendars", json=calendar__)
 
@@ -171,10 +170,10 @@ def event_add():
     return resp.json()
 
 
-@app.route("/api/v1/events/latest/<int:number_of_events>")
+@app.route("/api/v1/events/latest/<int:number_of_events>", methods=["GET", "DELETE"])
 @login_required(google)
 def delete_latest_events(number_of_events):
-    pass
+    raise NotImplementedError
 
 
 @app.route("/api/v1/convert/json")
