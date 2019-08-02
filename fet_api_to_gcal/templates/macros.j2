@@ -1,0 +1,15 @@
+{% macro render_select_field(label, field, show_label=true) -%}
+<div class="mui-select mui-select--float-label">
+    {{field}}
+    {% if show_label is not sameas false %}
+    <label> {{label}} </label>
+    {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro render_input_field(label, field) -%}
+<div class="mui-textfield mui-textfield--float-label">
+    {{field}}
+    <label> {{label}} </label>
+</div>
+{% endmacro -%}
