@@ -1,0 +1,12 @@
+{% extends "base.html.j2" %}
+
+{% block content %}
+<div class="mui-row">
+    <div class="mui-col-sm-8 mui-col-sm-offset-2">
+        <h1>That's not quite right!</h1>
+        <p>It looks like the credentials you're logged in with don't
+        grant you access to this application. Sorry.</p>
+        <p>You can &nbsp;<a class="mui-btn mui-btn--danger mui-btn--raised" href="{{url_for('logout')}}">Logout</a>&nbsp; and try again.</p>
+    </div>
+</div>
+{% endblock %}
