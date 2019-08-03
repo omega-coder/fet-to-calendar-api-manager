@@ -16,6 +16,7 @@ from oauthlib.oauth2.rfc6749.errors import (InvalidClientIdError,
 
 from fet_api_to_gcal import config
 from fet_api_to_gcal.common.utils import getDate, login_required
+from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
 app.config.from_object(config.DevelopmentConfig)
@@ -24,7 +25,17 @@ CORS(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# security params config
+# ALLOWED EXTENSIONS IN UPLOADS
+ALLOWED_EXTENSIONS = set(['csv', 'json'])
+app.config["ALLOWED_EXTENSIONS"] = ALLOWED_EXTENSIONS
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit(
+        '.', 1)[1] in app.config["ALLOWED_EXTENSIONS"]
+
+
+# SECURITY params config
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
@@ -83,8 +94,6 @@ def index():
             "email": flask.session["account"]
         }
         return render_template('index.html.j2', user_data=user_data)
-    #resp = google.get("/calendar/v3/users/me/calendarList")
-    #return jsonify(resp.json())
 
 
 @app.route('/logout')
@@ -170,22 +179,43 @@ def event_add():
     return resp.json()
 
 
-@app.route("/api/v1/events/latest/<int:number_of_events>", methods=["GET", "DELETE"])
+@app.route("/api/v1/events/latest/<int:number_of_events>",
+           methods=["GET", "DELETE"])
 @login_required(google)
 def delete_latest_events(number_of_events):
     raise NotImplementedError
+
+
+@app.route("/import", methods=["GET", "POST"])
+@login_required(google)
+def import_csv_to_calendar_api():
+    if request.method == "GET":
+        return make_response(render_template('import.html.j2'), 200)
+    elif request.method == "POST":
+        # check if the post request has the file part
+        if 'files[]' not in request.files:
+            flash("No file part", category="error")
+            return redirect(url_for('index'))
+        files = request.files.getlist('files[]')
+        for file in files:
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        flash("Files(s) successfully uploaded!", category="success")
+        return redirect(url_for('index'))
 
 
 @app.route("/api/v1/convert/json")
 def csv_tt_to_json_events(
         filename="fet_api_to_gcal/data/ESI_2019_01_10_14v7_timetable.csv"):
     dates = {
-        "1CPI": "2019/08/01",
-        "2CPI": "2019/08/02",
-        "1CS": "2019/08/02",
-        "2CS": "2019/08/02",
-        "3CS": "2019/08/02"
+        "1CPI": "2019/08/01",  # needs to be changed!
+        "2CPI": "2019/08/02",  # needs to be changed!
+        "1CS": "2019/08/02",  # needs to be changed!
+        "2CS": "2019/08/02",  # needs to be changed!
+        "3CS": "2019/08/02"  # needs to be changed!
     }
+    #TODO: make it as a parameter to be recived from the front end
     events_freq = 1
     timezone = "Africa/Algiers"
     f = open(filename, "r")
