@@ -15,6 +15,10 @@
       height: 100px;
       padding-top: 45px;
     }
+    #username {
+      font-size: bold;
+      font-weight: bold;
+    }
     </style>
   </head>
   <body>
@@ -27,7 +31,7 @@
             <td class="mui--text-right">
                 <ul class="mui-list--inline mui--text-body2">
                     <li>{% if user_data %}
-                          <span>{{ user_data.name }}</span>
+                          <span id="username">logged in  as: {{ user_data.name }}</span>
                         {% endif %}
                     </li>
                     <li>
@@ -49,7 +53,7 @@
           {% if category == 'error' %}
           <div class="mui-panel mui--bg-danger mui--text-white">
           {% else %}
-          <div class="mui-panel">
+          <div class="mui-panel mui--bg-primary mui--text-white">
           {% endif %}
               {{ message }}
           {% endfor %}
