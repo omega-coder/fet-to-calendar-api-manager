@@ -4,3 +4,4 @@ client_secrets.json
 app.db
 migrations
 fet_api_to_gcal/data/
+*.pyc
