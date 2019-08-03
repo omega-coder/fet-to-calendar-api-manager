@@ -12,6 +12,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + basedir + "/app.db"
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    UPLOAD_FOLDER = basedir + "/uploads/"
 
 
 class ProductionConfig(Config):
