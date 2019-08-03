@@ -1,0 +1,19 @@
+{% extends "base.html.j2" %}
+{% from 'macros.j2' import render_select_field, render_input_field %}
+
+{% block content %}
+<form method="POST" action="{{ url_for('import_csv_to_calendar_api') }}" class="mui-form" enctype="multipart/form-data">
+<div class="mui-row">
+    <div class="mui-col-sm-8 mui-col-sm-offset-2">
+        <div class="mui-textfield mui-textfield--float-label">
+            <input type="file" name="files[]" multiple="false" autocomplete="off" required id="raised-button-file">
+            <label>CSV File</label>
+        </div>
+        <input type="submit" name="submit">
+    </div>
+</div>
+<div class="mui-row">&nbsp;</div>
+
+
+</form>
+{% endblock content %}
