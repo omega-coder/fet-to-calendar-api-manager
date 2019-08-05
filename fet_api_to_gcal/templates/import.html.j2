@@ -2,16 +2,44 @@
 
 {% block content %}
 <div class="container">
-    <form method="POST" action="{{ url_for('import_csv_to_calendar_api') }}" class="mui-form" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('import_csv_to_calendar_api') }}" enctype="multipart/form-data" class="needs-validation" novalidate>
         <div class="form-group">
             <div class="custom-file">
-                <input type="file" name="file" class="custom-file-input text-success" id="customFile">
+                <input type="file" name="file" class="custom-file-input text-success" id="customFile" required>
                 <label class="custom-file-label" for="customFile">Choose file</label>
+                <div class="valid-feedback">Valid.</div>
+                <div class="invalid-feedback">Please fill out this field.</div> 
             </div>
+        </div>
+        <div class="form-group">
+            <input class="form-control" name="max_events" type="number" min="0" id="max_events" placeholder="5" required>
+            <label for="max_events">Max events to insert</label>
+            <div class="valid-feedback">Valid.</div>
+            <div class="invalid-feedback">Please fill out this field.</div>
         </div>
         <div class="form-group">
             <button type="submit" class="btn btn-primary btn-block"><span style="font-weight: bold;">Import</span></button>
         </div>
     </form>
 </div>
+<script>
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    // Get the forms we want to add validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>
+
 {% endblock content %}
