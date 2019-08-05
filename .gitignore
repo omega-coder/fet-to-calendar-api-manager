@@ -5,3 +5,4 @@ app.db
 migrations
 fet_api_to_gcal/data/
 *.pyc
+fet_api_to_gcal/uploads/*

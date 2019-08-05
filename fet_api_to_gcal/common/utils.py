@@ -47,7 +47,9 @@ def login_required(google):
             flash(('The account you are logged in with does not match the '
                    'configured whitelist'), 'error')
             return render_template('sorry.html.j2'), 403
+
         return decorated_route
+
     return decorated
 
 
