@@ -55,12 +55,22 @@ class Calendar(db.Model):
         })
 
 
+class import_oprtation(db.Model):
+    __tablename__ = "import_ops"
+    id = db.Column(db.Integer, primary_key=True)
+    import_date = db.Column(db.DateTime, default=datetime.utcnow())
+
+
 class events__log(db.Model):
     __tablename__ = "events__log"
     id = db.Column(db.Integer, primary_key=True)
     gevent_id = db.Column(db.String(100), unique=True)
     gcalendar_id = db.Column(db.String(100), index=True)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    import_id = db.Column(db.Integer, db.ForeignKey('import_ops.id'))
+    import_ops = db.relationship("import_oprtation",
+                                 backref=db.backref("import_ops",
+                                                    uselist=False))
 
     def __repr__(self):
         json.dumps({
