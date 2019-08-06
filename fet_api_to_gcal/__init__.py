@@ -94,6 +94,7 @@ def index():
         }
         flash(("You are logged in as {}".format(user_data["email"])),
               category='success')
+        get_buildings()
         return render_template('layout.html.j2', user_data=user_data)
 
 
@@ -210,7 +211,8 @@ def delete_event(calendar_id, event_id):
             return jsonify({"status": "failed"}), resp.status_code
 
 
-@app.route("/del_import/<int:id_import>")
+@app.route("/operation/delete/<int:id_import>", methods=["GET"])
+@login_required(google)
 def delete_importation(id_import):
     events = events__log.query.filter_by(import_id=id_import).all()
     for event in events:
@@ -223,10 +225,11 @@ def delete_importation(id_import):
     import_op = import_oprtation.query.filter_by(id=id_import).first()
     db.session.delete(import_op)
     db.session.commit()
-    return jsonify({"status": "success"}), 200
+    flash(("Operation {} deleted successfully"), category="success")
+    return redirect(url_for('operations')), 200
 
 
-@app.route("/operations", methods=["GET", "POST"])
+@app.route("/operations", methods=["GET"])
 @login_required(google)
 def operations():
     if request.method == "GET":
@@ -238,6 +241,15 @@ def operations():
             return render_template(url_for('operations'))
         return render_template('operations.html.j2',
                                operations=operations), 200
+
+
+def get_buildings():
+    buildings = set()
+    all_buildings = db.session.query(Resource).order_by(Resource.resource_id).all()
+    for res in all_buildings:
+        buildings.add(res.building)
+    
+    return buildings
 
 
 @app.route("/import", methods=["GET", "POST"])
