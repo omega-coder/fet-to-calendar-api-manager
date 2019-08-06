@@ -226,6 +226,20 @@ def delete_importation(id_import):
     return jsonify({"status": "success"}), 200
 
 
+@app.route("/operations", methods=["GET", "POST"])
+@login_required(google)
+def operations():
+    if request.method == "GET":
+        try:
+            operations = db.session.query(import_oprtation).order_by(
+                import_oprtation.id.desc()).all()
+        except Exception as e:
+            flash(("{}".format(e)), category="danger")
+            return render_template(url_for('operations'))
+        return render_template('operations.html.j2',
+                               operations=operations), 200
+
+
 @app.route("/import", methods=["GET", "POST"])
 @login_required(google)
 def import_csv_to_calendar_api():
