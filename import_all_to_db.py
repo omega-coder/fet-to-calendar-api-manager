@@ -17,8 +17,6 @@ def import_student_sets_to_db(
             db.session.add(std_mail_obj)
         else:
             print("[INFO] Student Set Already In database!!")
-        except Exception as e:
-            print(e)
     f.close()
     db.session.commit()
 
@@ -46,26 +44,21 @@ def import_techers_to_db(
 def import_resources_to_db(filename="fet_api_to_gcal/data/resources.json"):
     f = open(filename, "r")
     data = json.load(f)
-
     for resource in data['items']:
         res = Resource(resource_name=str(resource["resourceName"]),
                        gen_resource_name=str(
                            resource["generatedResourceName"]),
                        resource_email=str(resource["resourceEmail"]),
-                       capacity=int(resource["capacity"]))
-        queried_resource = Resource.query.filter_by(
-            resource_email=resource["resourceEmail"]).first()
-        if queried_resource is None:
-            db.session.add(res)
-        else:
-            print("[INFO] Resource Already In database!!")
+                       capacity=int(resource["capacity"]),
+                       building=resource["buildingId"])
+        db.session.add(res)
     db.session.commit()
     f.close()
 
 
-def import_calendars_with_std_sets(filename="fet_api_to_gcal/data/calendars_esi_with_std_sets.csv"):
+def import_calendars_with_std_sets(
+        filename="fet_api_to_gcal/data/calendars_esi_with_std_sets.csv"):
     raise NotImplementedError
-
 
 
 if __name__ == "__main__":
