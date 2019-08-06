@@ -232,7 +232,7 @@ def import_csv_to_calendar_api():
     if request.method == "GET":
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
-        max_events = request.args.get('max_events')
+        max_events = int(request.form["max_events"])
         calendar_id = "esi.dz_kqcdeugtt1lgnpms6htbotmigg@group.calendar.google.com"
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -255,7 +255,8 @@ def import_csv_to_calendar_api():
             except Exception as e:
                 print(e)
 
-            all_events = csv_tt_to_json_events(file__path, max_events=max_events)
+            all_events = csv_tt_to_json_events(file__path,
+                                               max_events=max_events)
             for event in all_events:
                 resp = google.post(
                     "/calendar/v3/calendars/{}/events".format(calendar_id),
