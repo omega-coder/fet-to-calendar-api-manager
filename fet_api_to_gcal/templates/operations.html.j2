@@ -1,0 +1,26 @@
+{% extends "layout.html.j2" %}
+
+{% block content %}
+    <h1>Operation Center</h1>
+    <table class="table tavle-dark table-stripped">
+  <thead>
+    <tr>
+      <th scope="col">Id</th>
+      <th scope="col">Import date</th>
+      <th scope="col">Delete Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for op in operations %}
+        <tr>
+            <th scope="row">{{ op.id }}</th>
+            <td>{{ op.import_date }}</td>
+            <td>
+                <button class="btn btn-danger">Delete Operation</button>
+            </td>
+        </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock content %}
