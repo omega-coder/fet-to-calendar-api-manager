@@ -10,6 +10,7 @@ class Resource(db.Model):
     gen_resource_name = db.Column(db.String(60), index=True, unique=True)
     resource_email = db.Column(db.String(100), index=True, unique=True)
     capacity = db.Column(db.Integer, nullable=True)
+    building = db.Column(db.String(100), index=True)
 
     def __repr__(self):
         return "{}".format(self.name)
