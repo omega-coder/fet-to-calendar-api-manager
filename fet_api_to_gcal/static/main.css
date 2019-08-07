@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Nunito:400,700&display=swap');
 
 body {
     background: #fafafa;
     color: #f7f7f7;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Nunito', sans-serif;
 }
 
 h1,
@@ -14,6 +14,7 @@ h5,
 h6 {
     color: #444444;
     text-transform: uppercase;
+    font-weight: 700;
 }
 
 #username {
@@ -23,6 +24,7 @@ h6 {
 
 .navbar {
     margin-bottom: 10px;
+    font-weight: 700;
 }
 
 label {
