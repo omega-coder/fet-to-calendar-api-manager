@@ -48,6 +48,7 @@ class Calendar(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     calendar_id_google = db.Column(db.String(100), unique=True, index=True)
     summary = db.Column(db.String(100), unique=True)
+    std_email = db.Column(db.String(100), unique=True, index=True)
 
     def __repr__(self):
         return json.dumps({
@@ -60,6 +61,8 @@ class import_oprtation(db.Model):
     __tablename__ = "import_ops"
     id = db.Column(db.Integer, primary_key=True)
     import_date = db.Column(db.DateTime, default=datetime.utcnow())
+    filename = db.Column(db.String(100))
+    number_events = db.Column(db.Integer)
 
 
 class events__log(db.Model):
