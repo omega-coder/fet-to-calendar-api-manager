@@ -1,0 +1,39 @@
+{% extends "layout.html.j2" %}
+
+
+{% block content %}
+<div class="container">
+    <p></p>
+    <form method="POST" action="{{ url_for('import_calendars') }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="form-group">
+            <div class="custom-file">
+                <input type="file" name="file" class="custom-file-input text-success" id="customFile" required>
+                <label class="custom-file-label" for="customFile">Choose file</label>
+                <div class="valid-feedback">Valid.</div>
+                <div class="invalid-feedback">Please specify a file to import</div> 
+            </div>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block"><span style="font-weight: 700;">Import calendars</span></button>
+        </div>
+    </form>
+</div>
+<script>
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>
+
+{% endblock content %}
