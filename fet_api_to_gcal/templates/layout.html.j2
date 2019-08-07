@@ -7,6 +7,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha256-YLGeXaapI0/5IgZopewRJcFXomhRMlYYjugPLSyNjTY=" crossorigin="anonymous" />
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
     <link
     href="data:image/x-icon;base64,AAABAAEAEBACAAAAAACwAAAAFgAAACgAAAAQAAAAIAAAAAEAAQAAAAAAQAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAAA4EAAAOBAAB7vQAA858AAOfPAADP5wAAn/MAAJ/zAACf8wAAn/MAAJ/zAADP5wAA588AAPAfAAD4PwAA"
     rel="icon" type="image/x-icon" />
@@ -35,6 +36,9 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('operations') }}">Operations</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('get_calendars') }}">Calendars</a>
                 </li>
             </ul>
             <ul class="navbar-nav">
