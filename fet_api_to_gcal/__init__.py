@@ -2,7 +2,7 @@ import functools
 import json
 import os
 from pprint import pprint
-
+from time import sleep
 import flask
 from flask import (Blueprint, abort, current_app, flash, jsonify,
                    make_response, redirect, render_template, request, url_for)
@@ -94,7 +94,6 @@ def index():
         }
         flash(("You are logged in as {}".format(user_data["email"])),
               category='success')
-        get_buildings()
         return render_template('layout.html.j2', user_data=user_data)
 
 
@@ -157,19 +156,6 @@ def calendars():
     return jsonify(calendars)
 
 
-@app.route('/api/v1/calendar/add/<string:calendar_name>')
-@login_required(google)
-def new_calendar(calendar_name):
-    if not google.authorized:
-        return flask.redirect(url_for('google.login'))
-
-    calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
-
-    resp = google.post("/calendar/v3/calendars", json=calendar__)
-
-    return resp.json()
-
-
 @app.route('/api/v1/events/add/<int:ev_num>')
 @login_required(google)
 def event_add():
@@ -225,8 +211,9 @@ def delete_importation(id_import):
     import_op = import_oprtation.query.filter_by(id=id_import).first()
     db.session.delete(import_op)
     db.session.commit()
-    flash(("Operation {} deleted successfully"), category="success")
-    return redirect(url_for('operations')), 200
+    flash(("Operation {} deleted successfully".format(id_import)),
+          category="success")
+    return redirect(url_for('operations')), 302
 
 
 @app.route("/operations", methods=["GET"])
@@ -238,18 +225,16 @@ def operations():
                 import_oprtation.id.desc()).all()
         except Exception as e:
             flash(("{}".format(e)), category="danger")
-            return render_template(url_for('operations'))
+            return render_template('operations.html.j2',
+                                   operations=None,
+                                   title="Operations"), 200
         return render_template('operations.html.j2',
-                               operations=operations), 200
+                               operations=operations,
+                               title="Operations"), 200
 
 
 def get_buildings():
-    buildings = set()
-    all_buildings = db.session.query(Resource).order_by(Resource.resource_id).all()
-    for res in all_buildings:
-        buildings.add(res.building)
-    
-    return buildings
+    return [str(b[0]) for b in db.session.query(Resource.building).distinct()]
 
 
 @app.route("/import", methods=["GET", "POST"])
@@ -260,7 +245,6 @@ def import_csv_to_calendar_api():
     elif request.method == "POST":
         max_events = int(request.form["max_events"])
         calendar_id = "esi.dz_kqcdeugtt1lgnpms6htbotmigg@group.calendar.google.com"
-        # check if the post request has the file part
         if 'file' not in request.files:
             flash(("No file part"), category='danger')
             return redirect(request.url)
@@ -273,7 +257,8 @@ def import_csv_to_calendar_api():
             file__path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             file.save(file__path)
 
-            operation_now = import_oprtation()
+            operation_now = import_oprtation(number_events=max_events,
+                                             filename=filename)
             db.session.add(operation_now)
             try:
                 op_id = db.session.query(import_oprtation).order_by(
@@ -304,8 +289,86 @@ def import_csv_to_calendar_api():
                   category='success')
             return redirect(url_for('import_csv_to_calendar_api'))
         else:
-            flash('Allowed file types are: csv and json', category="info")
+            flash('Allowed file types are: csv', category="info")
             return redirect(request.url)
+
+
+@app.route("/calendars", methods=["GET"])
+@login_required(google)
+def get_calendars():
+    if request.method == "GET":
+        try:
+            calendars = db.session.query(Calendar).order_by(
+                Calendar.id).all()
+        except Exception as e:
+            flash(("{}".format(e)), category="danger")
+            return render_template('calendars.html.j2',
+                                    calendars=None,
+                                    title="Calendars"), 200
+        return render_template('calendars.html.j2',
+                                calendars=calendars,
+                                title="Calendars"), 200
+
+
+
+def new_calendar(calendar_name):
+    if google.authorized:
+        calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
+        resp = google.post("/calendar/v3/calendars", json=calendar__)
+        if resp.status_code == 200:
+            return resp.json()["id"]
+        else:
+            print(resp.json())
+            return None
+    else:
+        return None
+
+
+@app.route("/calendar/delete/<string:gcalendar_id>")
+@login_required(google)
+def delete_calendar(gcalendar_id):
+    return render_template('calendars.html.j2',
+                           title="Calendars opearations"), 200
+
+
+@app.route("/calendars/import", methods=["GET", "POST"])
+@login_required(google)
+def import_calendars():
+    if request.method == "GET":
+        return render_template('calendars_import.html.j2',
+                               title='Import Calendars')
+    elif request.method == "POST":
+        if 'file' not in request.files:
+            flash(("No file part"), category='danger')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == "":
+            flash("No file selected for uploading", category='danger')
+            return redirect(request.url)
+        added_calendars = 1  # number of added calendars
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file__path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            for line in file.readlines():
+                line = line.decode().strip().split(",")
+                cal_record = Calendar.query.filter_by(summary=line[0]).first()
+                print(cal_record)
+                if cal_record is None:
+                    calendar_id = new_calendar(line[0])
+                    if calendar_id is not None:
+                        cal_rec = Calendar(calendar_id_google=calendar_id,
+                                           summary=line[0],
+                                           std_email=line[1].replace('"', ''))
+                        db.session.add(cal_rec)
+                        added_calendars += 1
+            db.session.commit()
+            flash(("Added {} calendars to google calendar from file {}".format(
+                added_calendars, filename)),
+                  category="success")
+            return redirect(request.url), 302
+        else:
+            flash(("[ERROR] File is not allowed"), category="danger")
+            return render_template('calendars_import.html.j2'), 200
 
 
 """
@@ -434,8 +497,7 @@ def csv_tt_to_json_events(
         "2CS": "2019/08/02",  # needs to be changed!
         "3CS": "2019/08/02"  # needs to be changed!
     }
-    if max_events is None:
-        max_events = 5
+
     timezone = "Africa/Algiers"
     f = open(filename, "r")
     lines = f.readlines()[1::]
