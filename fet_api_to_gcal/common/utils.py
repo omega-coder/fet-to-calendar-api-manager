@@ -42,7 +42,15 @@ def login_required(google):
                 session['domain'] = body['hd']
                 session['account'] = body['email']
                 session['name'] = body['name']
+                session["picture"] = body["picture"]
             if session['domain'] in ["esi.dz"]:
+                if session["account"] != "planification@esi.dz":
+                    flash((
+                        'The account you are logged in with does not match the '
+                        'configured whitelist'),
+                          category="error")
+                    session.clear()
+                    return render_template('404.html.j2', user_data=None), 403
                 return func(*args, **kwargs)
             flash(('The account you are logged in with does not match the '
                    'configured whitelist'), 'error')
