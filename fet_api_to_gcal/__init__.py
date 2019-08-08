@@ -12,8 +12,8 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from oauthlib.oauth2.rfc6749.errors import (InvalidClientIdError,
                                             TokenExpiredError,
-                                            InvalidGrantError)
-import requests
+                                            InvalidGrantError,
+                                            UnauthorizedClientError)
 from fet_api_to_gcal import config
 from fet_api_to_gcal.common.utils import getDate, login_required
 from werkzeug.utils import secure_filename
@@ -79,7 +79,8 @@ def add_resources_to_db():
 @app.route("/salles")
 @login_required(google)
 def salles():
-    return make_response(render_template('salle.html'), 200)
+    all_events = csv_tt_to_json_events(max_events=500)
+    return jsonify(all_events)
 
 
 @app.route("/")
@@ -94,7 +95,7 @@ def index():
         }
         flash(("You are logged in as {}".format(user_data["email"])),
               category='success')
-        return render_template('layout.html.j2', user_data=user_data)
+        return render_template('index.html.j2', user_data=user_data)
 
 
 @app.route('/logout')
@@ -110,6 +111,9 @@ def logout():
                     current_app.blueprints['google'].token['access_token']
                 },
             )
+        except UnauthorizedClientError:
+            flask.session.clear()
+            return redirect(url_for("google.login"))
         except TokenExpiredError:
             flask.session.clear()
             return redirect(url_for("google.login"))
@@ -118,7 +122,7 @@ def logout():
             return redirect(url_for("google.login"))
         except InvalidClientIdError:
             flask.session.clear()
-            return redirect(url_for('gogole.login'))
+            return redirect(url_for('google.login'))
     return redirect(url_for('google.login'))
 
 
@@ -237,6 +241,63 @@ def get_buildings():
     return [str(b[0]) for b in db.session.query(Resource.building).distinct()]
 
 
+@app.route("/teacher/add", methods=["POST"])
+@login_required(google)
+def teacher_add_to_db():
+    if request.method == "POST":
+        fet_name = request.form["fet_name"]
+        fullname = request.form["fullname"]
+        teacher_email = request.form["t_email"]
+        try:
+            teacher_obj = Teacher(teacher_email=teacher_email, fet_name=fet_name, fullname=fullname)
+            db.session.add(teacher_obj)
+            db.session.commit()
+            flash(("Teacher {} added successfully.".format(fet_name)), category="success")
+            return redirect(url_for('teacher_list')), 302
+        except Exception as e:
+            flash("Exception: {}".format(str(e)), category="danger")
+            return redirect(url_for("teacher_list")), 302
+
+
+@app.route("/teacher/edit/<int:teacher_id>", methods=["GET", "POST"])
+@login_required(google)
+def edit_teacher(teacher_id):
+    if request.method == "POST":
+        pass
+    elif request.method == "GET":
+        pass
+
+        
+
+@app.route("/teacher/delete/<int:teacher_id>", methods=["GET"])
+@login_required(google)
+def delete_teacher(teacher_id):
+    try:
+        teacher = Teacher.query.filter_by(teacher_id=teacher_id).first()
+        db.session.delete(teacher)
+        db.session.commit()
+        flash(("Teacher {} deleted successfully.".format(teacher.fet_name)), category="success")
+        return redirect(url_for('teacher_list')), 302
+    except Exception as e:
+        flash(("Sorry: {}".format(str(e))), category="danger")
+        return redirect(url_for('teacher_list')), 302
+
+
+@app.route("/teachers", methods=["GET"])
+@login_required(google)
+def teacher_list():
+    if request.method == "GET":
+        # get all teacher records from teachers tablename
+        try:
+            teachers = db.session.query(Teacher).order_by(Teacher.teacher_id.asc()).all()
+            flash(('Fetched {} teachers from database'.format(len(teachers))), category="info")
+            return render_template('teachers.html.j2', teachers=teachers)
+        except Exception as e:
+            print(e)
+            flash(("{}".format(str(e))), category="danger")
+            return redirect(request.url), 302
+
+
 @app.route("/import", methods=["GET", "POST"])
 @login_required(google)
 def import_csv_to_calendar_api():
@@ -269,20 +330,28 @@ def import_csv_to_calendar_api():
             all_events = csv_tt_to_json_events(file__path,
                                                max_events=max_events)
             for event in all_events:
-                resp = google.post(
-                    "/calendar/v3/calendars/{}/events".format(calendar_id),
-                    json=event)
-                if resp.status_code == 200:
-                    gevent_id = resp.json()["id"]
-                    event = events__log(gevent_id=gevent_id,
-                                        gcalendar_id=calendar_id,
-                                        import_id=op_id)
-                    try:
-                        db.session.add(event)
-                    except Exception as e:
-                        print(e)
-                else:
-                    print("Could not insert event")
+                for std_mail in event["attendees"][1:-1]:
+                    cal_rec = Calendar.query.filter_by(
+                        std_email=std_mail["email"]).first()
+                    if cal_rec:
+                        calendar_id = cal_rec.calendar_id_google
+                    else:
+                        print("could not add event, continuing to next event")
+                        continue
+                    resp = google.post(
+                        "/calendar/v3/calendars/{}/events".format(calendar_id),
+                        json=event)
+                    if resp.status_code == 200:
+                        gevent_id = resp.json()["id"]
+                        event = events__log(gevent_id=gevent_id,
+                                            gcalendar_id=calendar_id,
+                                            import_id=op_id)
+                        try:
+                            db.session.add(event)
+                        except Exception as e:
+                            print(e)
+                    else:
+                        print("Could not insert event")
             db.session.commit()
 
             flash(("Added {} events to calendar".format(len(all_events))),
@@ -298,17 +367,15 @@ def import_csv_to_calendar_api():
 def get_calendars():
     if request.method == "GET":
         try:
-            calendars = db.session.query(Calendar).order_by(
-                Calendar.id).all()
+            calendars = db.session.query(Calendar).order_by(Calendar.id).all()
         except Exception as e:
             flash(("{}".format(e)), category="danger")
             return render_template('calendars.html.j2',
-                                    calendars=None,
-                                    title="Calendars"), 200
+                                   calendars=None,
+                                   title="Calendars"), 200
         return render_template('calendars.html.j2',
-                                calendars=calendars,
-                                title="Calendars"), 200
-
+                               calendars=calendars,
+                               title="Calendars"), 200
 
 
 def new_calendar(calendar_name):
@@ -329,6 +396,32 @@ def new_calendar(calendar_name):
 def delete_calendar(gcalendar_id):
     return render_template('calendars.html.j2',
                            title="Calendars opearations"), 200
+
+
+@app.route("/api/v1/calendar/add/<string:summary>/<string:std_email>")
+@login_required(google)
+def add_calendar(summary, std_email):
+    cal_record = Calendar.query.filter_by(summary=summary).first()
+    if cal_record is None:
+        calendar__ = {'summary': summary, 'timeZone': 'Africa/Algiers'}
+        resp = google.post("/calendar/v3/calendars", json=calendar__)
+        if resp.status_code == 200:
+            calendar_id = resp.json()["id"]
+        else:
+            print(resp.json())
+            calendar_id = None
+        if calendar_id is not None:
+            cal_rec = Calendar(calendar_id_google=calendar_id,
+                               summary=summary,
+                               std_email=std_email)
+            db.session.add(cal_rec)
+    else:
+        print(cal_record)
+    db.session.commit()
+    if calendar_id:
+        return jsonify(resp.json()), 200
+    else:
+        return jsonify({"status": "failed"}), 200
 
 
 @app.route("/calendars/import", methods=["GET", "POST"])
@@ -354,7 +447,18 @@ def import_calendars():
                 cal_record = Calendar.query.filter_by(summary=line[0]).first()
                 print(cal_record)
                 if cal_record is None:
-                    calendar_id = new_calendar(line[0])
+                    calendar__ = {
+                        'summary': line[0],
+                        'timeZone': 'Africa/Algiers'
+                    }
+                    resp = google.post("/calendar/v3/calendars",
+                                       json=calendar__)
+                    if resp.status_code == 200:
+                        calendar_id = resp.json()["id"]
+                    else:
+                        print(resp.json())
+                        calendar_id = None
+                    sleep(5)
                     if calendar_id is not None:
                         cal_rec = Calendar(calendar_id_google=calendar_id,
                                            summary=line[0],
