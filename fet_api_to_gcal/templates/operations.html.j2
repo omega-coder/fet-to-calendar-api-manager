@@ -1,8 +1,9 @@
 {% extends "layout.html.j2" %}
 
 {% block content %}
-    <h1 class="text-center">Operation Center</h1>
-    <table class="table table-hover table-stripped">
+    <h1 class="text-center">Operations Center</h1>
+    <hr>
+    <table id="operations_dt" class="table table-hover table-stripped">
   <thead>
     <tr>
       <th scope="col">Id</th>
@@ -21,7 +22,7 @@
             <th>{{ op.number_events }}</th>
             <td>{{ op.import_date }}</td>
             <td>
-                <a href="{{ url_for('delete_importation', id_import=op.id) }}" class="btn btn-danger">delete</a>
+                <a href="{{ url_for('delete_importation', id_import=op.id) }}" class="btn btn-danger btn-sm">delete</a>
             </td>
         </tr>
     {% endfor %}
@@ -30,3 +31,10 @@
 </table>
 
 {% endblock content %}
+
+{% block additional_js %}
+        $('#operations_dt').DataTable({
+            'pagingType': "full_numbers"
+        });
+        $('.dataTables_length').addClass('bs-select');
+{% endblock additional_js %}
