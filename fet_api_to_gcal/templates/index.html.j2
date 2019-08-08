@@ -1,15 +1,13 @@
-{% extends "base.html.j2" %}
-{% from 'macros.j2' import render_select_field, render_input_field %}
+{% extends "layout.html.j2" %}
 
 {% block content %}
-<form method="POST" action="/" class="mui-form">
-<div class="mui-row">
-    <div class="mui-col-sm-8 mui-col-sm-offset-2">
-
-    </div>
-</div>
-<div class="mui-row">&nbsp;</div>
-
-
-</form>
+	<div id="notfound">
+		<div class="notfound">
+			<div class="notfound-404">
+				<h1>ESI!</h1>
+				<h2>FET to calendar api manager!</h2>
+			</div>
+			<a href="{{ url_for('import_csv_to_calendar_api') }}">Start event import</a>
+		</div>
+	</div>
 {% endblock content %}
