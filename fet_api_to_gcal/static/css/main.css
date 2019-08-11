@@ -141,9 +141,13 @@ label {
 /* Footer */
 
 footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
     font-family: 'Nunito', sans-serif;
     font-weight: 700;
 }
+
 
 .footer-copyright a {
     color: rgb(0, 91, 238) !important;
