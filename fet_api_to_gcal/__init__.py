@@ -423,6 +423,37 @@ def add_calendar(summary, std_email):
     else:
         return jsonify({"status": "failed"}), 200
 
+@app.route("/calendar/add", methods=["POST"])
+@login_required(google)
+def calendar_add():
+   calendar_name = request.form["calendar_name"]
+   std_email = request.form["std_email"]
+
+   cal_record = Calendar.query.filter_by(summary=calendar_name).first() 
+   if cal_record is None:
+        calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
+        resp = google.post("/calendar/v3/calendars", json=calendar__)
+        if resp.status_code == 200:
+            if "id" in resp.json().keys():
+                calendar_id = resp.json()["id"]
+                calendar_obj = Calendar(calendar_id_google=calendar_id, summary=calendar_name, std_email=std_email)
+                db.session.add(calendar_obj)
+                db.session.commit()
+                flash(('Added calendar {} to both google calendar and local database'.format(calendar_name)), category="success")
+                return redirect(url_for("get_calendars"))
+            else:
+                flash(("Invalid response from calendar api"), category="danger")
+                return redirect(url_for('get_calendars')), 302
+        else:
+            flash(("Calendar API returned a non 200 response"), category="danger")
+            return redirect(url_for('get_calendars')), 302
+   else:
+        flash(("Calendar {} already found in application database".format(calendar_name)), category="info")
+        return redirect(url_for('get_calendars')), 302
+
+
+
+
 
 @app.route("/calendars/import", methods=["GET", "POST"])
 @login_required(google)
