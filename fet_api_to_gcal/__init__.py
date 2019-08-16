@@ -249,14 +249,34 @@ def teacher_add_to_db():
         fullname = request.form["fullname"]
         teacher_email = request.form["t_email"]
         try:
-            teacher_obj = Teacher(teacher_email=teacher_email, fet_name=fet_name, fullname=fullname)
+            teacher_obj = Teacher(teacher_email=teacher_email,
+                                  fet_name=fet_name,
+                                  fullname=fullname)
             db.session.add(teacher_obj)
             db.session.commit()
-            flash(("Teacher {} added successfully.".format(fet_name)), category="success")
+            flash(("Teacher {} added successfully.".format(fet_name)),
+                  category="success")
             return redirect(url_for('teacher_list')), 302
         except Exception as e:
             flash("Exception: {}".format(str(e)), category="danger")
             return redirect(url_for("teacher_list")), 302
+
+
+# token is not required for this route
+# the following route is useful to make AJAX requests from UI to get teacher infos.
+@app.route("/api/v1/teachers/<int:teacher_id>")
+def teacher_get(teacher_id):
+    try:
+        teacher_obj = Teacher.query.filter_by(teacher_id=teacher_id).first()
+        resp = {
+            "teacher_id": teacher_obj.teacher_id,
+            "fet_name": teacher_obj.fet_name,
+            "fullname": teacher_obj.fullname,
+            "teacher_email": teacher_obj.teacher_email
+        }
+        return jsonify(resp)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route("/teacher/edit/<int:teacher_id>", methods=["GET", "POST"])
@@ -267,7 +287,6 @@ def edit_teacher(teacher_id):
     elif request.method == "GET":
         pass
 
-        
 
 @app.route("/teacher/delete/<int:teacher_id>", methods=["GET"])
 @login_required(google)
@@ -276,7 +295,8 @@ def delete_teacher(teacher_id):
         teacher = Teacher.query.filter_by(teacher_id=teacher_id).first()
         db.session.delete(teacher)
         db.session.commit()
-        flash(("Teacher {} deleted successfully.".format(teacher.fet_name)), category="success")
+        flash(("Teacher {} deleted successfully.".format(teacher.fet_name)),
+              category="success")
         return redirect(url_for('teacher_list')), 302
     except Exception as e:
         flash(("Sorry: {}".format(str(e))), category="danger")
@@ -289,8 +309,10 @@ def teacher_list():
     if request.method == "GET":
         # get all teacher records from teachers tablename
         try:
-            teachers = db.session.query(Teacher).order_by(Teacher.teacher_id.asc()).all()
-            flash(('Fetched {} teachers from database'.format(len(teachers))), category="info")
+            teachers = db.session.query(Teacher).order_by(
+                Teacher.teacher_id.asc()).all()
+            flash(('Fetched {} teachers from database'.format(len(teachers))),
+                  category="info")
             return render_template('teachers.html.j2', teachers=teachers)
         except Exception as e:
             print(e)
@@ -423,36 +445,43 @@ def add_calendar(summary, std_email):
     else:
         return jsonify({"status": "failed"}), 200
 
+
 @app.route("/calendar/add", methods=["POST"])
 @login_required(google)
 def calendar_add():
-   calendar_name = request.form["calendar_name"]
-   std_email = request.form["std_email"]
+    calendar_name = request.form["calendar_name"]
+    std_email = request.form["std_email"]
 
-   cal_record = Calendar.query.filter_by(summary=calendar_name).first() 
-   if cal_record is None:
+    cal_record = Calendar.query.filter_by(summary=calendar_name).first()
+    if cal_record is None:
         calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
         resp = google.post("/calendar/v3/calendars", json=calendar__)
         if resp.status_code == 200:
             if "id" in resp.json().keys():
                 calendar_id = resp.json()["id"]
-                calendar_obj = Calendar(calendar_id_google=calendar_id, summary=calendar_name, std_email=std_email)
+                calendar_obj = Calendar(calendar_id_google=calendar_id,
+                                        summary=calendar_name,
+                                        std_email=std_email)
                 db.session.add(calendar_obj)
                 db.session.commit()
-                flash(('Added calendar {} to both google calendar and local database'.format(calendar_name)), category="success")
+                flash((
+                    'Added calendar {} to both google calendar and local database'
+                    .format(calendar_name)),
+                      category="success")
                 return redirect(url_for("get_calendars"))
             else:
-                flash(("Invalid response from calendar api"), category="danger")
+                flash(("Invalid response from calendar api"),
+                      category="danger")
                 return redirect(url_for('get_calendars')), 302
         else:
-            flash(("Calendar API returned a non 200 response"), category="danger")
+            flash(("Calendar API returned a non 200 response"),
+                  category="danger")
             return redirect(url_for('get_calendars')), 302
-   else:
-        flash(("Calendar {} already found in application database".format(calendar_name)), category="info")
+    else:
+        flash(("Calendar {} already found in application database".format(
+            calendar_name)),
+              category="info")
         return redirect(url_for('get_calendars')), 302
-
-
-
 
 
 @app.route("/calendars/import", methods=["GET", "POST"])
