@@ -3,6 +3,7 @@
 {% block content %}
     <h1 class="text-center">Teachers control center</h1>
     <hr>
+  <h3>Add teacher</h3>
 <form method="POST" action="{{ url_for('teacher_add_to_db') }}">
   <div class="form-row">
     <div class="form-group col-md-4">
@@ -60,11 +61,29 @@
         </button>
       </div>
       <div class="modal-body">
-        ...
+        <form method="POST" action="{{ url_for('edit_teacher') }}">
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="inputEmail4">Email</label>
+      <input type="email" name="t_email_edit" class="form-control" id="inputEmail4_edit" placeholder="Email">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="inputFullName4">Fullname</label>
+      <input type="text" name="fullname_edit" class="form-control" id="inputFullName4_edit" placeholder="Fullname">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="inputFetName4">FET Name</label>
+      <input type="text" name="fet_name_edit" class="form-control" id="inputFetName4_edit" placeholder="FET Name">
+    </div>
+          <input type="hidden" name="teacher_id" class="form-control" id="teacher_id" placeholder="Teacher_id">
+
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Edit</button>
+</form>
+
       </div>
       <div class="modal-footer justify-content-center">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>
@@ -77,4 +96,21 @@
             'pagingType': "full_numbers"
         });
         $('.dataTables_length').addClass('bs-select');
+
+        $("#fullHeightModalRight").on('show.bs.modal', function(event) {
+          var button = $(event.relatedTarget)
+          var teacher_id = button.data('omega')
+          $.ajax({
+            method: "GET",
+            url: "/api/v1/teachers/"+teacher_id.toString(),
+            cache: false,
+            success: function(data) {
+              $("#inputEmail4_edit").val(data["teacher_email"]);
+              $("#inputFullName4_edit").val(data["fullname"]);
+              $("#inputFetName4_edit").val(data["fet_name"]);
+              $("#teacher_id").val(data["teacher_id"]);
+            }
+          });
+        });
+
 {% endblock additional_js %}
