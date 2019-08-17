@@ -1,10 +1,8 @@
-import functools
 import json
 import os
-from pprint import pprint
 from time import sleep
 import flask
-from flask import (Blueprint, abort, current_app, flash, jsonify,
+from flask import (current_app, flash, jsonify,
                    make_response, redirect, render_template, request, url_for)
 from flask_cors import CORS
 from flask_dance.contrib.google import google, make_google_blueprint
@@ -53,7 +51,7 @@ google_bp = make_google_blueprint(
     offline=True)
 app.register_blueprint(google_bp, url_prefix="/login")
 
-from fet_api_to_gcal.models import Calendar, Demande, Resource, User, Teacher, events__log, Std_mail, import_oprtation
+from fet_api_to_gcal.models import Calendar, Resource, Teacher, events__log, Std_mail, import_oprtation
 
 
 @app.route('/resources/import', methods=["GET"])
@@ -99,7 +97,6 @@ def index():
 
 
 @app.route('/logout')
-@login_required(google)
 def logout():
     """Revokes token and empties session"""
     if google.authorized:
@@ -111,6 +108,8 @@ def logout():
                     current_app.blueprints['google'].token['access_token']
                 },
             )
+            # clearing the session to prevent user data to be shown on the app
+            flask.session.clear()
         except UnauthorizedClientError:
             flask.session.clear()
             return redirect(url_for("google.login"))
@@ -263,7 +262,7 @@ def teacher_add_to_db():
 
 
 # token is not required for this route
-# the following route is useful to make AJAX requests from UI to get teacher infos.
+# the following route is used for AJAX requests from UI to get teacher infos.
 @app.route("/api/v1/teachers/<int:teacher_id>")
 def teacher_get(teacher_id):
     try:
@@ -279,13 +278,25 @@ def teacher_get(teacher_id):
         return jsonify({"status": "error", "message": str(e)})
 
 
-@app.route("/teacher/edit/<int:teacher_id>", methods=["GET", "POST"])
+@app.route("/teacher/edit/", methods=["POST"])
 @login_required(google)
-def edit_teacher(teacher_id):
+def edit_teacher():
     if request.method == "POST":
-        pass
-    elif request.method == "GET":
-        pass
+        try:
+            teacher_id = int(request.form["teacher_id"])
+            fullname = request.form["fullname_edit"]
+            fet_name_edit = request.form["fet_name_edit"]
+            teacher_email = request.form["t_email_edit"]
+            teacher_obj = Teacher.query.filter_by(teacher_id=teacher_id).first()
+            teacher_obj.fullname = fullname
+            teacher_obj.fet_name = fet_name_edit
+            teacher_obj.teacher_email = teacher_email
+            db.session.commit()
+            flash(("Teacher {} added successfully".format(fullname)), category="success")
+            return redirect(url_for('teacher_list')), 302
+        except Exception as e:
+            flash(("Couldnt edit teacher, sorry! {}".format(e)), category="danger")
+            return render_template("teachers.html.j2")
 
 
 @app.route("/teacher/delete/<int:teacher_id>", methods=["GET"])
@@ -327,7 +338,6 @@ def import_csv_to_calendar_api():
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
         max_events = int(request.form["max_events"])
-        calendar_id = "esi.dz_kqcdeugtt1lgnpms6htbotmigg@group.calendar.google.com"
         if 'file' not in request.files:
             flash(("No file part"), category='danger')
             return redirect(request.url)
@@ -501,7 +511,6 @@ def import_calendars():
         added_calendars = 1  # number of added calendars
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file__path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             for line in file.readlines():
                 line = line.decode().strip().split(",")
                 cal_record = Calendar.query.filter_by(summary=line[0]).first()
@@ -540,11 +549,11 @@ def csv_tt_to_json_events(
         events_freq=1,
         max_events=None):
     dates = {
-        "1CPI": "2019/08/02",  # needs to be changed!
-        "2CPI": "2019/08/02",  # needs to be changed!
-        "1CS": "2019/08/02",  # needs to be changed!
-        "2CS": "2019/08/02",  # needs to be changed!
-        "3CS": "2019/08/02"  # needs to be changed!
+        "1CPI": "2019/09/08",  # needs to be changed!
+        "2CPI": "2019/09/08",  # needs to be changed!
+        "1CS": "2019/09/08",  # needs to be changed!
+        "2CS": "2019/09/08",  # needs to be changed!
+        "3CS": "2019/09/08"  # needs to be changed!
     }
 
     timezone = "Africa/Algiers"
