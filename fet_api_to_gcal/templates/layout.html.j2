@@ -49,7 +49,7 @@
             </ul>
             <ul class="navbar-nav ml-auto nav-flex-icons">
                 <li class="nav-item avatar dropdown">
-                    <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink-55" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><img src="{{ session['picture'] }}" class="rounded-circle z-depth-0"
+                    <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink-55" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ session["name"] }} <img src="{{ session['picture'] }}" class="rounded-circle z-depth-0"
             alt="avatar image" height="35"/></span></a>
                     <div class="dropdown-menu dropdown-menu-lg-right dropdown-secondary" aria-labelledby="navbarDropdownMenuLink-55">
                     <a class="dropdown-item" href="{{ url_for('logout') }}">Log out</a>
@@ -65,8 +65,12 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} fade show">
+                        <div class="alert alert-{{ category }} alert-dismissible fade show text-center">
                             {{ message }}
+                              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                               </button>
+
                         </div>
                     {% endfor %}
                 {% endif %}
@@ -99,7 +103,7 @@
     $(document).ready(function () {
         setTimeout(function () {
             $('.alert').alert('close');
-        }, 3500);
+        }, 5000);
         $(".custom-file-input").on("change", function() {
             var fileName = $(this).val().split("\\").pop();
             $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
