@@ -1,12 +1,20 @@
-{% extends "base.html.j2" %}
+{% extends "layout.html.j2" %}
 
 {% block content %}
-<div class="mui-row">
-    <div class="mui-col-sm-8 mui-col-sm-offset-2">
-        <h1>That's not quite right!</h1>
-        <p>It looks like the credentials you're logged in with don't
-        grant you access to this application. Sorry.</p>
-        <p>You can &nbsp;<a class="mui-btn mui-btn--danger mui-btn--raised" href="{{url_for('logout')}}">Logout</a>&nbsp; and try again.</p>
+    <div class="alert alert-info alert-dismissible fade show text-center" role="alert">
+        Sorry, you can not use the web app, but you can still consume some <strong>API endpoints</strong>.
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+
     </div>
-</div>
-{% endblock %}
+	<div id="notfound">
+		<div class="notfound">
+			<div class="notfound-404">
+				<h1>Sorry!</h1>
+				<h2>403 - Unauthorized</h2>
+			</div>
+			<a href="{{ url_for('logout') }}">Try connecting again</a>
+		</div>
+	</div>
+{% endblock content %}
