@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from flask import (current_app, flash, redirect, url_for, render_template,
-                   session)
+from flask import (flash, redirect, url_for, render_template, session)
 
 from functools import wraps
 import datetime
@@ -20,7 +19,7 @@ def login_required(google):
                 if resp.status_code != 200:
                     flash(
                         'Could not get your profile informations from google',
-                        category='error')
+                        category='danger')
                     return render_template('sorry.html.j2'), 403
 
                 body = resp.json()
@@ -28,17 +27,16 @@ def login_required(google):
                     flash((
                         'Incomplete profile informations was returned by google'
                     ),
-                          category='error')
+                          category='danger')
                     return render_template('sorry.html.j2'), 403
 
                 if body["email"] != "planification@esi.dz":
-                    flash((
-                        'The account you are logged in with does not match the '
-                        'configured whitelist'),
-                          category="error")
-                    session.clear()
-                    return render_template('sorry.html.j2',
-                                           user_data=None), 403
+                    session["picture"] = body["picture"]
+                    session['name'] = body['name']
+                    flash(
+                        'The account you are logged in with does not match the configured whitelist',
+                        category='danger')
+                    return render_template('sorry.html.j2'), 403
                 session['domain'] = body['hd']
                 session['account'] = body['email']
                 session['name'] = body['name']
@@ -46,14 +44,15 @@ def login_required(google):
             if session['domain'] in ["esi.dz"]:
                 if session["account"] != "planification@esi.dz":
                     flash((
-                        'The account you are logged in with does not match the '
+                        'The account you are logged in with does not match the'
                         'configured whitelist'),
-                          category="error")
+                          category="danger")
                     session.clear()
-                    return render_template('404.html.j2', user_data=None), 403
+                    return render_template('sorry.html.j2'), 403
                 return func(*args, **kwargs)
             flash(('The account you are logged in with does not match the '
-                   'configured whitelist'), 'error')
+                   'configured whitelist'),
+                  category='danger')
             return render_template('sorry.html.j2'), 403
 
         return decorated_route
@@ -89,4 +88,4 @@ def perror(text):
 
 # print success text
 def psuccess(text):
-    print(bcolors.OKGREEN + test + bcolors.ENDC)
+    print(bcolors.OKGREEN + text + bcolors.ENDC)
