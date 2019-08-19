@@ -203,12 +203,13 @@ def delete_event(calendar_id, event_id):
 @app.route("/operation/delete/<int:id_import>", methods=["GET"])
 @login_required(google)
 def delete_importation(id_import):
+    delete_event_req_params = {"sendUpdates": "all"}
     events = events__log.query.filter_by(import_id=id_import).all()
     for event in events:
         event_id = event.gevent_id
         gcalendar_id = event.gcalendar_id
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
-            gcalendar_id, event_id))
+            gcalendar_id, event_id), json=delete_event_req_params)
         if resp.status_code == 204:
             db.session.delete(event)
     import_op = import_oprtation.query.filter_by(id=id_import).first()
