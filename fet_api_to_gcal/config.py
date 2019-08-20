@@ -6,11 +6,13 @@ class Config(object):
     DEBUG = False
     TESTING = False
     CSRF_ENABLED = True
-    SECRET_KEY = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    SECRET_KEY = os.urandom(24).hex()
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + basedir + "/app.db"
     SQLALCHEMY_ECHO = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = basedir + "/uploads/"
+    GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
+    GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
 
 
 class ProductionConfig(Config):
