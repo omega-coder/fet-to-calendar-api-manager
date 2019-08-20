@@ -40,14 +40,11 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-CLIENT_ID = "991974833650-r66aqfg60ga0f8oj2itrgghf4hvt8qs0.apps.googleusercontent.com"
-CLIENT_SECRET = "1SaQh1nxJ1A9EUsID6EIWoVy"
-app.config["GOOGLE_OAUTH_CLIENT_ID"] = CLIENT_ID
-app.config["GOOGLE_OAUTH_CLIENT_SECRET"] = CLIENT_SECRET
+
 google_bp = make_google_blueprint(
     scope=["profile", "email", "https://www.googleapis.com/auth/calendar"],
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
+    client_id=app.config.get("GOOGLE_OAUTH_CLIENT_ID"),
+    client_secret=app.config.get("GOOGLE_OAUTH_CLIENT_SECRET"),
     offline=True)
 app.register_blueprint(google_bp, url_prefix="/login")
 
