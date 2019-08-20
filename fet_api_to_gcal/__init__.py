@@ -159,27 +159,6 @@ def calendars():
     return jsonify(calendars)
 
 
-@app.route('/api/v1/events/add/<int:ev_num>')
-@login_required(google)
-def event_add():
-    calendar_id = "esi.dz_kqcdeugtt1lgnpms6htbotmigg@group.calendar.google.com"
-    f = open("out.json", 'r')
-    json_tt = json.load(f)
-    for event_id in range(5):
-        event = json_tt[event_id]
-        resp = google.post(
-            "/calendar/v3/calendars/{}/events".format(calendar_id), json=event)
-
-    return resp.json()
-
-
-@app.route("/api/v1/events/latest/<int:number_of_events>",
-           methods=["GET", "DELETE"])
-@login_required(google)
-def delete_latest_events(number_of_events):
-    pass
-
-
 @app.route("/calendars/<string:calendar_id>/events/<string:event_id>",
            methods=["GET", "DELETE"])
 @login_required(google)
@@ -215,7 +194,7 @@ def delete_importation(id_import):
     import_op = import_oprtation.query.filter_by(id=id_import).first()
     db.session.delete(import_op)
     db.session.commit()
-    flash(("Operation {} deleted successfully".format(id_import)),
+    flash(("Operation {} deleted successfully".format(id_import)),q
           category="success")
     return redirect(url_for('operations')), 302
 
