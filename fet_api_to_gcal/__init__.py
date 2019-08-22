@@ -191,7 +191,7 @@ def delete_importation(id_import):
     import_op = import_oprtation.query.filter_by(id=id_import).first()
     db.session.delete(import_op)
     db.session.commit()
-    flash(("Operation {} deleted successfully".format(id_import)),q
+    flash(("Operation {} deleted successfully".format(id_import)),
           category="success")
     return redirect(url_for('operations')), 302
 
