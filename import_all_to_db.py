@@ -64,5 +64,6 @@ def import_calendars_with_std_sets(
 if __name__ == "__main__":
     try:
         import_resources_to_db()
+        import_techers_to_db()
     except NotImplementedError as e:
         print(e)
