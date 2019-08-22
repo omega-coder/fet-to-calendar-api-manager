@@ -13,6 +13,10 @@ class Config(object):
     UPLOAD_FOLDER = basedir + "/uploads/"
     GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
     GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
+    DOMAIN_WHITELIST = ["esi.dz", "domain.dz"]
+    EMAIL_WHITELIST = [
+        "example@omega.org", "example2@esi.dz", "fy_cherief@esi.dz"
+    ]
 
 
 class ProductionConfig(Config):
