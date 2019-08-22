@@ -1,4 +1,4 @@
-# Project Title
+# FET Timetable to Google Calendar
 
 Export FET generated timetable (School schedule timetable) to Google Calendar using google calendar API
 
