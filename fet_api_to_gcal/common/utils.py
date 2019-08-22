@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from flask import (flash, redirect, url_for, render_template, session)
+from flask import (flash, redirect, url_for, render_template, session,
+                   current_app)
 
 from functools import wraps
 import datetime
@@ -29,20 +30,13 @@ def login_required(google):
                     ),
                           category='danger')
                     return render_template('sorry.html.j2'), 403
-
-                if body["email"] != "planification@esi.dz":
-                    session["picture"] = body["picture"]
-                    session['name'] = body['name']
-                    flash(
-                        'The account you are logged in with does not match the configured whitelist',
-                        category='danger')
-                    return render_template('sorry.html.j2'), 403
                 session['domain'] = body['hd']
                 session['account'] = body['email']
                 session['name'] = body['name']
                 session["picture"] = body["picture"]
-            if session['domain'] in ["esi.dz"]:
-                if session["account"] != "planification@esi.dz":
+            if session['domain'] in current_app.config["DOMAIN_WHITELIST"]:
+                if session["account"] not in current_app.config[
+                        "EMAIL_WHITELIST"]:
                     flash((
                         'The account you are logged in with does not match the'
                         'configured whitelist'),
