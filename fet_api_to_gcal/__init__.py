@@ -2,8 +2,8 @@ import json
 import os
 from time import sleep
 import flask
-from flask import (current_app, flash, jsonify,
-                   make_response, redirect, render_template, request, url_for)
+from flask import (current_app, flash, jsonify, make_response, redirect,
+                   render_template, request, url_for)
 from flask_cors import CORS
 from flask_dance.contrib.google import google, make_google_blueprint
 from flask_migrate import Migrate
@@ -40,7 +40,6 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax',
 )
 
-
 google_bp = make_google_blueprint(
     scope=["profile", "email", "https://www.googleapis.com/auth/calendar"],
     client_id=app.config.get("GOOGLE_OAUTH_CLIENT_ID"),
@@ -48,7 +47,8 @@ google_bp = make_google_blueprint(
     offline=True)
 app.register_blueprint(google_bp, url_prefix="/login")
 
-from fet_api_to_gcal.models import Calendar, Resource, Teacher, events__log, Std_mail, import_oprtation
+from fet_api_to_gcal.models import (Calendar, Resource, Teacher, events__log,
+                                    Std_mail, import_oprtation)
 
 
 @app.route('/resources/import', methods=["GET"])
@@ -185,7 +185,8 @@ def delete_importation(id_import):
         event_id = event.gevent_id
         gcalendar_id = event.gcalendar_id
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
-            gcalendar_id, event_id), json=delete_event_req_params)
+            gcalendar_id, event_id),
+                             json=delete_event_req_params)
         if resp.status_code == 204:
             db.session.delete(event)
     import_op = import_oprtation.query.filter_by(id=id_import).first()
@@ -264,15 +265,18 @@ def edit_teacher():
             fullname = request.form["fullname_edit"]
             fet_name_edit = request.form["fet_name_edit"]
             teacher_email = request.form["t_email_edit"]
-            teacher_obj = Teacher.query.filter_by(teacher_id=teacher_id).first()
+            teacher_obj = Teacher.query.filter_by(
+                teacher_id=teacher_id).first()
             teacher_obj.fullname = fullname
             teacher_obj.fet_name = fet_name_edit
             teacher_obj.teacher_email = teacher_email
             db.session.commit()
-            flash(("Teacher {} added successfully".format(fullname)), category="success")
+            flash(("Teacher {} added successfully".format(fullname)),
+                  category="success")
             return redirect(url_for('teacher_list')), 302
         except Exception as e:
-            flash(("Couldnt edit teacher, sorry! {}".format(e)), category="danger")
+            flash(("Couldnt edit teacher, sorry! {}".format(e)),
+                  category="danger")
             return render_template("teachers.html.j2")
 
 
@@ -315,6 +319,7 @@ def import_csv_to_calendar_api():
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
         max_events = int(request.form["max_events"])
+        events_freq = int(request.form["events_freq"])
         if 'file' not in request.files:
             flash(("No file part"), category='danger')
             return redirect(request.url)
@@ -337,7 +342,8 @@ def import_csv_to_calendar_api():
                 print(e)
 
             all_events = csv_tt_to_json_events(file__path,
-                                               max_events=max_events)
+                                               max_events=max_events,
+                                               events_freq=events_freq)
             for event in all_events:
                 for std_mail in event["attendees"][1:-1]:
                     cal_rec = Calendar.query.filter_by(
@@ -451,9 +457,8 @@ def calendar_add():
                                         std_email=std_email)
                 db.session.add(calendar_obj)
                 db.session.commit()
-                flash((
-                    'Added calendar {} to both google calendar and local database'
-                    .format(calendar_name)),
+                flash(('Added calendar {} to google calendar'.format(
+                    calendar_name)),
                       category="success")
                 return redirect(url_for("get_calendars"))
             else:
@@ -573,7 +578,7 @@ def csv_tt_to_json_events(
         try:
             event___old = temp_dict_holder[str(event_inx)]
         except KeyError as e:
-            continue
+            print(e)
         __gevent__ = {"summary": event___old["summary"]}
 
         # get attendees emails
