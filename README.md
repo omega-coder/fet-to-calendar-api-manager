@@ -17,6 +17,21 @@ You can install the other requirements using pip from the requirement.txt file
 pip install -r requirements.txt
 ```
 
+### Deployment
+
+## 1. Get a CLIENT_ID and CLIENT_SECRET using the google calendar api console.
+## 2. set up environment variables for the app.
+    
+    ```bash
+        export GOOGLE_OAUTH_CLIENT_ID="xxxxxxxxxx-xxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
+        export GOOGLE_OAUTH_CLIENT_SECRET="xxxxxxxxxxxxxxxx-xxxxxx"
+    ```
+## 3. Run the app.
+    ```bash
+        python app.py
+    ```
+    
+
 ## Built With
 
 * [Python3](https://www.python.org/) - The main used language.
