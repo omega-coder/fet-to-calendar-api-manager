@@ -611,7 +611,7 @@ def csv_tt_to_json_events(
             "RRULE:FREQ=WEEKLY;COUNT=" + str(events_freq)
         ]
         # set start and time
-        #print(event___old["std_set"].split(" ")[0])
+        # print(event___old["std_set"].split(" ")[0])
         dateTime_start = getDate(dates, event___old["std_set"].split(" ")[0],
                                  event___old["Day"],
                                  event___old["start"].split("h")[0],
