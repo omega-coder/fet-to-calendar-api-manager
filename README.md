@@ -27,12 +27,16 @@ pip install -r requirements.txt
     export GOOGLE_OAUTH_CLIENT_SECRET="xxxxxxxxxxxxxxxx-xxxxxx"
 ```
 ## 3. Run the app.
-    
-    
+
 ```bash
     python app.py
 ```
-    
+
+Or use gunicorn server (**Recommended**)
+
+```bash
+    gunicorn --bind 0.0.0.0:5000 app:app 
+``` 
 
 ## Built With
 
