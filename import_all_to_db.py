@@ -1,5 +1,5 @@
 from fet_api_to_gcal import db
-from fet_api_to_gcal.models import Resource, Std_mail, Teacher
+from fet_api_to_gcal.models import Resource, Std_mail, Teacher, Calendar
 import json
 
 
@@ -56,6 +56,59 @@ def import_resources_to_db(filename="fet_api_to_gcal/data/resources.json"):
     f.close()
 
 
+def import_calendars_from_google_json_resp(
+        filename="fet_api_to_gcal/data/calendars.json"):
+    f = open(filename, "r")
+    data = json.load(f)
+    for calendar in data["items"]:
+        summary = calendar["summary"]
+        calendar_id = calendar["id"]
+        cal_obj = Calendar.query.filter_by(summary=summary).first()
+        if cal_obj is None:
+            # getting the student email from the summary
+            student_set = Std_mail.query.filter_by(std_set=summary).first()
+            if student_set is None:
+                continue
+            else:
+                calendar = Calendar(summary=summary,
+                                    calendar_id_google=calendar_id,
+                                    std_email=student_set.std_email)
+                db.session.add(calendar)
+            db.session.commit()
+        else:
+            print("Calendar already in DB")
+
+
+def update_all_calendars_from_json_resp(
+        filename="fet_api_to_gcal/data/calendars_new.json"):
+    f = open(filename, "r")
+    data = json.load(f)
+    for calendar in data["items"]:
+        summary = calendar["summary"]
+        if "1CPI" or "2CPI" in summary:
+            if summary[-2] == "0":
+                summary = summary[:-2:] + summary[-1]
+                import pdb
+                pdb.set_trace()
+        calendar_id = calendar["id"]
+        cal_obj = Calendar.query.filter_by(summary=summary).first()
+        if cal_obj is None:
+            # getting the student email from the summary
+            student_set = Std_mail.query.filter_by(std_set=summary).first()
+            if student_set is None:
+                continue
+            else:
+                calendar = Calendar(summary=summary,
+                                    calendar_id_google=calendar_id,
+                                    std_email=student_set.std_email)
+                db.session.add(calendar)
+            db.session.commit()
+        else:
+            # updating calendar
+            cal_obj.calendar_id_google = calendar_id
+            db.session.commit()
+
+
 def import_calendars_with_std_sets(
         filename="fet_api_to_gcal/data/calendars_esi_with_std_sets.csv"):
     raise NotImplementedError
@@ -63,7 +116,6 @@ def import_calendars_with_std_sets(
 
 if __name__ == "__main__":
     try:
-        import_resources_to_db()
-        import_techers_to_db()
+        update_all_calendars_from_json_resp()
     except NotImplementedError as e:
         print(e)
