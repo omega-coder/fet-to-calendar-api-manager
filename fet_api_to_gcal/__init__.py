@@ -13,7 +13,7 @@ from oauthlib.oauth2.rfc6749.errors import (InvalidClientIdError,
                                             InvalidGrantError,
                                             UnauthorizedClientError)
 from fet_api_to_gcal import config
-from fet_api_to_gcal.common.utils import getDate, login_required
+from fet_api_to_gcal.common.utils import getDate, login_required, check_google_calendar_id
 from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
@@ -186,7 +186,7 @@ def delete_importation(id_import):
         gcalendar_id = event.gcalendar_id
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
             gcalendar_id, event_id),
-                             json=delete_event_req_params)
+            json=delete_event_req_params)
         if resp.status_code == 204:
             db.session.delete(event)
     import_op = import_oprtation.query.filter_by(id=id_import).first()
@@ -250,6 +250,23 @@ def teacher_get(teacher_id):
             "fet_name": teacher_obj.fet_name,
             "fullname": teacher_obj.fullname,
             "teacher_email": teacher_obj.teacher_email
+        }
+        return jsonify(resp)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+# token is not required for this route
+# the following route is used for AJAX requests from UI to get calendar infos.
+@app.route("/api/v1/calendars/<int:calendar_id>")
+def calendar_get(calendar_id):
+    try:
+        calendar_obj = Calendar.query.filter_by(id=calendar_id).first()
+        resp = {
+            "calendar_id": calendar_obj.id,
+            "google_calendar_id": calendar_obj.calendar_id_google,
+            "summary": calendar_obj.summary,
+            "student_email": calendar_obj.std_email
         }
         return jsonify(resp)
     except Exception as e:
@@ -393,6 +410,29 @@ def get_calendars():
                                title="Calendars"), 200
 
 
+@app.route("/calendar/edit/", methods=["POST"])
+@login_required(google)
+def edit_calendar():
+    if request.method == "POST":
+        try:
+            calendar_id = int(request.form["calendar_id"])
+            google_calendar_id = request.form["inputGoogleCalendarID4_edit"]
+            summary = request.form["inputCalendarName4_edit"]
+            student_email = request.form["inputStudentEmail4_edit"]
+            calendar_obj = Calendar.query.filter_by(id=calendar_id).first()
+            calendar_obj.summary = summary
+            calendar_obj.calendar_id_google = google_calendar_id
+            calendar_obj.std_email = student_email
+            db.session.commit()
+            flash(("Calendar {} edited successfully".format(summary)),
+                  category="success")
+            return redirect(url_for('get_calendars')), 302
+        except Exception as e:
+            flash(("Couldnt edit Calendar, sorry! {}".format(e)),
+                  category="danger")
+            return render_template("calendars.html.j2")
+
+
 def new_calendar(calendar_name):
     if google.authorized:
         calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
@@ -444,36 +484,54 @@ def add_calendar(summary, std_email):
 def calendar_add():
     calendar_name = request.form["calendar_name"]
     std_email = request.form["std_email"]
-
-    cal_record = Calendar.query.filter_by(summary=calendar_name).first()
-    if cal_record is None:
-        calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
-        resp = google.post("/calendar/v3/calendars", json=calendar__)
-        if resp.status_code == 200:
-            if "id" in resp.json().keys():
-                calendar_id = resp.json()["id"]
-                calendar_obj = Calendar(calendar_id_google=calendar_id,
-                                        summary=calendar_name,
-                                        std_email=std_email)
-                db.session.add(calendar_obj)
-                db.session.commit()
-                flash(('Added calendar {} to google calendar'.format(
-                    calendar_name)),
-                      category="success")
-                return redirect(url_for("get_calendars"))
+    google_calendar_id = request.form["google_calendar_id"]
+    if check_google_calendar_id(google_calendar_id):
+        # Add the google calendar directly to the local DB (Assume that Calendar has been already created)
+        cal_obj = Calendar(summary=calendar_name,
+                           std_email=std_email,
+                           calendar_id_google=google_calendar_id)
+        try:
+            db.session.add(cal_obj)
+            db.session.commit()
+        except Exception:
+            flash(('Could not add calendar {} to google calendar'.format(
+                calendar_name)),
+                category="error")
+            return redirect(url_for("get_calendars"))
+    else:
+        # Creating a google calenda and receiving the gcal ID from Google
+        cal_record = Calendar.query.filter_by(summary=calendar_name).first()
+        if cal_record is None:
+            calendar__ = {
+                'summary': calendar_name,
+                'timeZone': 'Africa/Algiers'
+            }
+            resp = google.post("/calendar/v3/calendars", json=calendar__)
+            if resp.status_code == 200:
+                if "id" in resp.json().keys():
+                    calendar_id = resp.json()["id"]
+                    calendar_obj = Calendar(calendar_id_google=calendar_id,
+                                            summary=calendar_name,
+                                            std_email=std_email)
+                    db.session.add(calendar_obj)
+                    db.session.commit()
+                    flash(('Added calendar {} to google calendar'.format(
+                        calendar_name)),
+                        category="success")
+                    return redirect(url_for("get_calendars"))
+                else:
+                    flash(("Invalid response from calendar api"),
+                          category="danger")
+                    return redirect(url_for('get_calendars')), 302
             else:
-                flash(("Invalid response from calendar api"),
+                flash(("Calendar API returned a non 200 response"),
                       category="danger")
                 return redirect(url_for('get_calendars')), 302
         else:
-            flash(("Calendar API returned a non 200 response"),
-                  category="danger")
+            flash(("Calendar {} already found in application database".format(
+                calendar_name)),
+                category="info")
             return redirect(url_for('get_calendars')), 302
-    else:
-        flash(("Calendar {} already found in application database".format(
-            calendar_name)),
-              category="info")
-        return redirect(url_for('get_calendars')), 302
 
 
 @app.route("/calendars/import", methods=["GET", "POST"])
@@ -519,7 +577,7 @@ def import_calendars():
             db.session.commit()
             flash(("Added {} calendars to google calendar from file {}".format(
                 added_calendars, filename)),
-                  category="success")
+                category="success")
             return redirect(request.url), 302
         else:
             flash(("[ERROR] File is not allowed"), category="danger")
