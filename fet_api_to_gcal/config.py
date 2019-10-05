@@ -13,9 +13,9 @@ class Config(object):
     UPLOAD_FOLDER = basedir + "/uploads/"
     GOOGLE_OAUTH_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID")
     GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
-    DOMAIN_WHITELIST = ["esi.dz", "domain.dz"]
+    DOMAIN_WHITELIST = ["esi.dz", "gmail.com"]
     EMAIL_WHITELIST = [
-        "planification@esi.dz", "example2@esi.dz", "fy_cherief@esi.dz"
+        "planification@esi.dz", "y_challal@esi.dz", "fy_cherief@esi.dz"
     ]
 
 
