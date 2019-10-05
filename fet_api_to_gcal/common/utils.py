@@ -5,6 +5,7 @@ from flask import (flash, redirect, url_for, render_template, session,
 
 from functools import wraps
 import datetime
+import re
 
 
 def login_required(google):
@@ -83,3 +84,9 @@ def perror(text):
 # print success text
 def psuccess(text):
     print(bcolors.OKGREEN + text + bcolors.ENDC)
+
+
+def check_google_calendar_id(google_cal_id):
+    return bool(
+        re.match(r"esi\.dz_[a-z0-9]{26}@group\.calendar\.google\.com",
+                 google_cal_id))
