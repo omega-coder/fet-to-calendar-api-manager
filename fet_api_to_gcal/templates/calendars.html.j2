@@ -6,13 +6,17 @@
     <h3>Add calendar</h3>
     <form method="POST" action="{{ url_for('calendar_add') }}">
       <div class="form-row">
-        <div class="form-group col-md-4">
+        <div class="form-group col-md-2">
           <label for="inputCalendarName">Calendar Name</label>
           <input type="text" name="calendar_name" class="form-control" id="inputCalendarName" placeholder="2CS SQ G2">
         </div>
-        <div class="form-group col-md-4">
+        <div class="form-group col-md-2">
           <label for="inputStdEmail">Student set email</label>
           <input type="email" name="std_email" class="form-control" id="inputStdEmail" placeholder="2cssq@esi.dz">
+        </div>
+        <div class="form-group col-md-8">
+          <label for="inputGoogleCalendarId">Google Calendar ID (must be a valid gcal ID) <scpan class="text-sm">(Optional)</span> </label>
+          <input type="email" name="google_calendar_id" class="form-control" id="inputGoogleCalendarId" placeholder="" max=59 min=59>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Add</button>
       </div>
@@ -37,13 +41,55 @@
             <th>{{ cal.summary }}</th>
             <td>{{ cal.std_email }}</td>
             <td>
-                <a href="{{ url_for('delete_calendar', gcalendar_id=cal.id) }}" class="btn btn-danger btn-sm">delete</a>
+                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#fullHeightModalRight" data-omega="{{ cal.id }}">Edit</button>
+                <a href="{{ url_for('delete_calendar', gcalendar_id=cal.id) }}" class="btn btn-danger btn-sm">Delete</a>
             </td>
         </tr>
     {% endfor %}
     {% endif %}
   </tbody>
 </table>
+
+<div class="modal fade bottom" id="fullHeightModalRight" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+  aria-hidden="true">
+  <div class="modal-dialog modal-full-height modal-bottom" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title w-100 text-center" id="myModalLabel">Edit Calendar</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" action="{{ url_for('edit_calendar') }}">
+  <div class="form-row">
+    <div class="form-group col-md-4">
+      <label for="inputCalendarName4_edit">Summary</label>
+      <input type="text" name="inputCalendarName4_edit" class="form-control" id="inputCalendarName4_edit" placeholder="Calendar name">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="inputGoogleCalendarID4_edit">Google calendar ID</label>
+      <input type="email" name="inputGoogleCalendarID4_edit" class="form-control" id="inputGoogleCalendarID4_edit" placeholder="Google calendar ID">
+    </div>
+    <div class="form-group col-md-4">
+      <label for="inputStudentEmail4_edit">Student Email</label>
+      <input type="email" name="inputStudentEmail4_edit" class="form-control" id="inputStudentEmail4_edit" placeholder="FET Name">
+    </div>
+          <input type="hidden" name="calendar_id" class="form-control" id="calendar_id" placeholder="Calendar ID">
+
+  </div>
+  <button type="submit" class="btn btn-primary btn-block">Edit</button>
+</form>
+
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {% endblock content %}
 
 {% block additional_js %}
@@ -51,4 +97,20 @@
             'pagingType': "full_numbers"
         });
         $('.dataTables_length').addClass('bs-select');
+
+        $("#fullHeightModalRight").on('show.bs.modal', function(event) {
+          var button = $(event.relatedTarget)
+          var calendar_id = button.data('omega')
+          $.ajax({
+            method: "GET",
+            url: "/api/v1/calendars/"+calendar_id.toString(),
+            cache: false,
+            success: function(data) {
+              $("#inputGoogleCalendarID4_edit").val(data["google_calendar_id"]);
+              $("#inputCalendarName4_edit").val(data["summary"]);
+              $("#inputStudentEmail4_edit").val(data["student_email"]);
+              $("#calendar_id").val(data["calendar_id"]);
+            }
+          });
+        });
 {% endblock additional_js %}
