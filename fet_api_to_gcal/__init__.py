@@ -186,7 +186,7 @@ def delete_importation(id_import):
         gcalendar_id = event.gcalendar_id
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
             gcalendar_id, event_id),
-            json=delete_event_req_params)
+                             json=delete_event_req_params)
         if resp.status_code == 204:
             db.session.delete(event)
     import_op = import_oprtation.query.filter_by(id=id_import).first()
@@ -496,7 +496,7 @@ def calendar_add():
         except Exception:
             flash(('Could not add calendar {} to google calendar'.format(
                 calendar_name)),
-                category="error")
+                  category="error")
             return redirect(url_for("get_calendars"))
     else:
         # Creating a google calenda and receiving the gcal ID from Google
@@ -517,7 +517,7 @@ def calendar_add():
                     db.session.commit()
                     flash(('Added calendar {} to google calendar'.format(
                         calendar_name)),
-                        category="success")
+                          category="success")
                     return redirect(url_for("get_calendars"))
                 else:
                     flash(("Invalid response from calendar api"),
@@ -530,7 +530,7 @@ def calendar_add():
         else:
             flash(("Calendar {} already found in application database".format(
                 calendar_name)),
-                category="info")
+                  category="info")
             return redirect(url_for('get_calendars')), 302
 
 
@@ -577,7 +577,7 @@ def import_calendars():
             db.session.commit()
             flash(("Added {} calendars to google calendar from file {}".format(
                 added_calendars, filename)),
-                category="success")
+                  category="success")
             return redirect(request.url), 302
         else:
             flash(("[ERROR] File is not allowed"), category="danger")
@@ -589,11 +589,11 @@ def csv_tt_to_json_events(
         events_freq=1,
         max_events=None):
     dates = {
-        "1CPI": "2019/09/08",  # needs to be changed!
-        "2CPI": "2019/09/08",  # needs to be changed!
-        "1CS": "2019/09/08",  # needs to be changed!
-        "2CS": "2019/09/08",  # needs to be changed!
-        "3CS": "2019/09/08"  # needs to be changed!
+        "1CPI": "2019/10/06",  # needs to be changed!
+        "2CPI": "2019/10/06",  # needs to be changed!
+        "1CS": "2019/10/06",  # needs to be changed!
+        "2CS": "2019/10/06",  # needs to be changed!
+        "3CS": "2019/10/06"  # needs to be changed!
     }
 
     timezone = "Africa/Algiers"
@@ -630,9 +630,15 @@ def csv_tt_to_json_events(
                     line_splitted[0]]["end"] = line_splitted[2].split("-")[1]
         else:
             continue
-
+    # from pprint import pprint
+    # pprint(temp_dict_holder)
     # 2nd phase
-    for event_inx in range(1, len(temp_dict_holder) + 1):
+    # exit(1)
+
+    print("Len of dict holder {}".format(len(temp_dict_holder)))
+
+    indexes = list(map(int, list(temp_dict_holder.keys())))
+    for event_inx in indexes:
         try:
             event___old = temp_dict_holder[str(event_inx)]
         except KeyError as e:
@@ -649,7 +655,6 @@ def csv_tt_to_json_events(
                     {"email": teacher.teacher_email})
         # students
         if event___old["std_set"] == "":
-            print("WTF")
             continue
         for std_set__ in event___old["std_set"].split("+"):
 
