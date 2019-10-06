@@ -15,7 +15,8 @@ class Config(object):
     GOOGLE_OAUTH_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET")
     DOMAIN_WHITELIST = ["esi.dz", "gmail.com"]
     EMAIL_WHITELIST = [
-        "planification@esi.dz", "y_challal@esi.dz", "fy_cherief@esi.dz"
+        "planification@esi.dz", "y_challal@esi.dz", "fy_cherief@esi.dz",
+        "isi@esi.dz"
     ]
 
 
