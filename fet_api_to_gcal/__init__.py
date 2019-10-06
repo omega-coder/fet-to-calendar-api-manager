@@ -618,7 +618,7 @@ def csv_tt_to_json_events(
                     "teachers":
                     line_splitted[5].split("+"),
                     "room":
-                    line_splitted[-1],
+                    line_splitted[-1].upper(),
                     "summary":
                     "{} {} {}".format(line_splitted[-2], line_splitted[-4],
                                       line_splitted[-3]),
@@ -630,13 +630,7 @@ def csv_tt_to_json_events(
                     line_splitted[0]]["end"] = line_splitted[2].split("-")[1]
         else:
             continue
-    # from pprint import pprint
-    # pprint(temp_dict_holder)
     # 2nd phase
-    # exit(1)
-
-    print("Len of dict holder {}".format(len(temp_dict_holder)))
-
     indexes = list(map(int, list(temp_dict_holder.keys())))
     for event_inx in indexes:
         try:
@@ -653,6 +647,8 @@ def csv_tt_to_json_events(
             if teacher is not None:
                 __gevent__["attendees"].append(
                     {"email": teacher.teacher_email})
+            else:
+                print("Teacher {} not found".format(teacher_name))
         # students
         if event___old["std_set"] == "":
             continue
