@@ -336,6 +336,8 @@ def import_csv_to_calendar_api():
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
         max_events = int(request.form["max_events"])
+        if max_events == 0:
+            max_events = None
         events_freq = int(request.form["events_freq"])
         if 'file' not in request.files:
             flash(("No file part"), category='danger')
