@@ -179,7 +179,7 @@ def delete_event(calendar_id, event_id):
 @app.route("/operation/delete/<int:id_import>", methods=["GET"])
 @login_required(google)
 def delete_importation(id_import):
-    delete_event_req_params = {"sendUpdates": "all"}
+    delete_event_req_params = {"sendUpdates": "none"}
     events = events__log.query.filter_by(import_id=id_import).all()
     for event in events:
         event_id = event.gevent_id
@@ -374,7 +374,7 @@ def import_csv_to_calendar_api():
                         continue
                     resp = google.post(
                         "/calendar/v3/calendars/{}/events".format(calendar_id),
-                        json=event)
+                        json=event, params={"sendUpates": "none"})
                     if resp.status_code == 200:
                         gevent_id = resp.json()["id"]
                         event = events__log(gevent_id=gevent_id,
@@ -591,11 +591,11 @@ def csv_tt_to_json_events(
         events_freq=1,
         max_events=None):
     dates = {
-        "1CPI": "2019/10/06",  # needs to be changed!
-        "2CPI": "2019/10/06",  # needs to be changed!
-        "1CS": "2019/10/06",  # needs to be changed!
-        "2CS": "2019/10/06",  # needs to be changed!
-        "3CS": "2019/10/06"  # needs to be changed!
+        "1CPI": "2019/10/13",  # needs to be changed!
+        "2CPI": "2019/10/13",  # needs to be changed!
+        "1CS": "2019/10/20",  # needs to be changed!
+        "2CS": "2019/10/20",  # needs to be changed!
+        "3CS": "2019/10/20"  # needs to be changed!
     }
 
     timezone = "Africa/Algiers"
@@ -694,7 +694,6 @@ def csv_tt_to_json_events(
             "timeZone": timezone,
             "dateTime": dateTime_end,
         }
-
         all_events.append(__gevent__)
         if len(all_events) == max_events:
             return all_events
