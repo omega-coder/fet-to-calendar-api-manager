@@ -359,7 +359,7 @@ def import_csv_to_calendar_api():
                     import_oprtation.id.desc()).first().id
             except Exception as e:
                 print(e)
-
+            db.session.commit()
             all_events = csv_tt_to_json_events(file__path,
                                                max_events=max_events,
                                                events_freq=events_freq)
@@ -374,20 +374,25 @@ def import_csv_to_calendar_api():
                         continue
                     resp = google.post(
                         "/calendar/v3/calendars/{}/events".format(calendar_id),
-                        json=event, params={"sendUpates": "none"})
+                        json=event,
+                        params={"sendUpates": "none"})
                     if resp.status_code == 200:
                         gevent_id = resp.json()["id"]
-                        event = events__log(gevent_id=gevent_id,
-                                            gcalendar_id=calendar_id,
-                                            import_id=op_id)
                         try:
-                            db.session.add(event)
+                            event_logged = events__log(
+                                gevent_id=gevent_id,
+                                gcalendar_id=calendar_id,
+                                import_id=op_id)
+                        except Exception as e:
+                            print(e)
+                            print(event)
+                        try:
+                            db.session.add(event_logged)
+                            db.session.commit()
                         except Exception as e:
                             print(e)
                     else:
                         print("Could not insert event")
-            db.session.commit()
-
             flash(("Added {} events to calendar".format(len(all_events))),
                   category='success')
             return redirect(url_for('import_csv_to_calendar_api'))
