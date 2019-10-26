@@ -1,0 +1,54 @@
+{% extends "layout.html.j2" %}
+
+{% block content %}
+<div class="container">
+    <form method="POST" action="{{ url_for('verifyfile') }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="form-group">
+            <div class="custom-file">
+                {% if input_disabled %}
+                <input type="file" name="file" class="custom-file-input text-success" id="customFile" required disabled>
+                {% else %}
+                <input type="file" name="file" class="custom-file-input text-success" id="customFile" required>
+                {% endif %}
+                <label class="custom-file-label" for="customFile">Choose file</label>
+                <div class="valid-feedback">Valid.</div>
+                <div class="invalid-feedback">Please fill out this field.</div> 
+            </div>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-block"><span style="font-weight: bold;">Verify File</span></button>
+        </div>
+    </form>
+    {% if progress %}
+    <div class="progress">
+      <div id="progress" class="progress-bar" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show text-center" id="errors"></div>
+
+    {% endif %}
+
+</div>
+<script>
+(function() {
+  'use strict';
+    window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+
+</script>
+
+
+{% endblock content %}
+
+
+
