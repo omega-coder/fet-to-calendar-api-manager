@@ -108,7 +108,36 @@
             var fileName = $(this).val().split("\\").pop();
             $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
         });
-
+        {% if show_progress_js %}
+            setInterval(function() {
+                $.get("progress/thread/{{ thread_id }}", function(data) {
+                    if (data["status"].toString() === "pending") {
+                        $('#progress').attr('aria-valuenow', data["progress"].toString()).css('width', data["progress"].toString()+"%").html(data["progress"].toString() + "%");
+                        if (data["errors"].length !== 0) {
+                            $("#errors").addClass("alert-danger");
+                            let errors = "";
+                            for (let i = 0; i < data["errors"].length; i++) {
+                                errors += data["errors"][i]["error"].toString() + "<br>";
+                            }
+                            //console.log(errors);
+                            $("#errors").html(errors);
+                        }
+                    } else {
+                        if ($("#errors").html() == "") {
+                                alert(1);
+                                if ($("#errors").hasClass("alert-danger")) {
+                                $(this).removeClass("alert-danger");
+                                $("#errors").addClass("alert-success");
+                            }
+                            $('#progress').attr('aria-valuenow', data["progress"].toString()).css('width', data["progress"].toString()+"%").html(data["progress"].toString() + "%");
+                            $("#errors").html("NO errors found!");    
+                        }
+                        
+                    }
+                    console.log(data); 
+                })
+            }, 1000)
+        {% endif %}
         {% block additional_js %}{% endblock %}
 
     });
