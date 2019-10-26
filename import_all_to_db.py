@@ -88,14 +88,13 @@ def update_all_calendars_from_json_resp(
         if "1CPI" or "2CPI" in summary:
             if summary[-2] == "0":
                 summary = summary[:-2:] + summary[-1]
-                import pdb
-                pdb.set_trace()
         calendar_id = calendar["id"]
         cal_obj = Calendar.query.filter_by(summary=summary).first()
         if cal_obj is None:
             # getting the student email from the summary
             student_set = Std_mail.query.filter_by(std_set=summary).first()
             if student_set is None:
+                print("std set {} none".format(summary))
                 continue
             else:
                 calendar = Calendar(summary=summary,
