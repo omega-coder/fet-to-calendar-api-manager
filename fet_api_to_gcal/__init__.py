@@ -1,6 +1,8 @@
 import json
 import os
 from time import sleep
+import random
+import threading
 import flask
 from flask import (current_app, flash, jsonify, make_response, redirect,
                    render_template, request, url_for)
@@ -50,6 +52,178 @@ app.register_blueprint(google_bp, url_prefix="/login")
 from fet_api_to_gcal.models import (Calendar, Resource, Teacher, events__log,
                                     Std_mail, import_oprtation)
 
+
+VERIFYING_THREADS = {}
+
+
+class VerifyFileThread(threading.Thread):
+    def __init__(self, filename):
+        self.progress = 0
+        self.filename = filename
+        self.max_events = None
+        self.events_freq = 1
+        self.errors = []
+        super().__init__()
+
+    def run(self):
+        dates = {
+            "1CPI": "2019/10/13",  # needs to be changed!
+            "2CPI": "2019/10/13",  # needs to be changed!
+            "1CS": "2019/10/20",  # needs to be changed!
+            "2CS": "2019/10/20",  # needs to be changed!
+            "3CS": "2019/10/20"  # needs to be changed!
+        }
+
+        timezone = "Africa/Algiers"
+        f = open(self.filename, "r")
+        lines = f.readlines()[1::]
+        all_events = []  # to hold all json gevents later!
+        temp_dict_holder = {}
+        for line in lines:
+            line_splitted = list(
+                map(lambda x: x.replace('"', ''),
+                    line.strip().split(",")))[:-1]
+            if "Pause" not in line_splitted[2]:
+                if line_splitted[0] not in list(temp_dict_holder.keys()):
+                    start_end = line_splitted[2].split("-")
+                    temp_dict_holder[line_splitted[0]] = {
+                        "Day":
+                        line_splitted[1],
+                        "start":
+                        start_end[0],
+                        "end":
+                        start_end[1],
+                        "teachers":
+                        line_splitted[5].split("+"),
+                        "room":
+                        line_splitted[-1].upper(),
+                        "summary":
+                        "{} {} {}".format(line_splitted[-2], line_splitted[-4],
+                                        line_splitted[-3]),
+                        "std_set":
+                        line_splitted[3]
+                    }
+                else:
+                    temp_dict_holder[
+                        line_splitted[0]]["end"] = line_splitted[2].split("-")[1]
+            else:
+                continue
+        # 2nd phase
+        indexes = list(map(int, list(temp_dict_holder.keys())))
+        for event_inx in indexes:
+            try:
+                event___old = temp_dict_holder[str(event_inx)]
+            except KeyError as e:
+                print(e)
+            __gevent__ = {"summary": event___old["summary"]}
+
+            # get attendees emails
+            __gevent__["attendees"] = []
+            # teachers
+            for teacher_name in event___old["teachers"]:
+                teacher = Teacher.query.filter_by(fet_name=teacher_name).first()
+                if teacher is not None:
+                    __gevent__["attendees"].append(
+                        {"email": teacher.teacher_email})
+                else:
+                    self.errors.append({"error": "Teacher {} not found".format(teacher_name)})
+                    print("Teacher {} not found".format(teacher_name))
+            # students
+            if event___old["std_set"] == "":
+                self.errors.append({"error": "student set empty in event index {}".format(event_inx)})
+                continue
+            for std_set__ in event___old["std_set"].split("+"):
+
+                std_mails_obj = Std_mail.query.filter_by(std_set=std_set__).first()
+                if std_mails_obj is not None:
+                    __gevent__["attendees"].append(
+                        {"email": std_mails_obj.std_email})
+
+            # add room if existing
+
+            if event___old["room"] != "":
+                res = Resource.query.filter_by(
+                    resource_name=event___old["room"]).first()
+                if res is not None:
+                    __gevent__["attendees"].append({
+                        "email": res.resource_email,
+                        "resource": True
+                    })
+            else:
+                self.errors.append({"error": "No room specified in event index {}".format(event_inx)})
+            # recurrence rule
+            __gevent__["recurrence"] = [
+                "RRULE:FREQ=WEEKLY;COUNT=" + str(self.events_freq)
+            ]
+            # set start and time
+            # print(event___old["std_set"].split(" ")[0])
+            dateTime_start = getDate(dates, event___old["std_set"].split(" ")[0],
+                                        event___old["Day"],
+                                        event___old["start"].split("h")[0],
+                                        event___old["start"].split("h")[1])
+            dateTime_end = getDate(dates, event___old["std_set"].split()[0],
+                                event___old["Day"],
+                                event___old["end"].split("h")[0],
+                                event___old["end"].split("h")[1])
+            __gevent__["start"] = {
+                "timeZone": timezone,
+                "dateTime": dateTime_start,
+            }
+            __gevent__["end"] = {
+                "timeZone": timezone,
+                "dateTime": dateTime_end,
+            }
+            all_events.append(__gevent__)
+            self.progress = int(float(len(all_events) / len(temp_dict_holder)) * 100)
+        self.progress = 100
+
+
+@app.route("/verifyfile", methods=["GET", "POST"])
+def verifyfile():
+    global VERIFYING_THREADS
+    if request.method == "GET":
+        if "VERIFY_THREAD_ID" in flask.session:
+            progress = VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress
+            print(progress)
+            print("IS ALIVE" + str(VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].is_alive()))
+            return render_template("verify_file.html.j2", progress=progress, show_progress_js=True, input_disabled=True, thread_id=flask.session["VERIFY_THREAD_ID"])
+        else:
+            return render_template("verify_file.html.j2", progress=None, show_progress_js=True, input_disabled=False)
+
+    elif request.method == "POST":
+        if 'file' not in request.files:
+            flash(("No file part"), category='danger')
+            return redirect(request.url)
+        file = request.files['file']
+        if file.filename == "":
+            flash("No file selected for uploading", category='danger')
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file__path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(file__path)
+            thread_id = random.randint(0, 10000)
+            VERIFYING_THREADS[thread_id] = VerifyFileThread(filename=file__path)
+            flask.session["VERIFY_THREAD_ID"] = thread_id
+            VERIFYING_THREADS[thread_id].start()
+            progress = VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress
+            return render_template("verify_file.html.j2", progress=1, show_progress_js=True, input_disabled=True, thread_id=flask.session["VERIFY_THREAD_ID"])
+            # return redirect(request.url)
+        else:
+            flash('Allowed file types are: csv', category="info")
+            return redirect(request.url)
+
+
+@app.route("/progress/thread/<int:thread_id>")
+def progress(thread_id):
+    global VERIFYING_THREADS
+    if "VERIFY_THREAD_ID" not in flask.session.keys():
+        return jsonify({"status": "done", "progress": 100})
+    elif "VERIFY_THREAD_ID" in flask.session.keys() and not VERIFYING_THREADS[thread_id].is_alive():
+        flask.session.pop("VERIFY_THREAD_ID")
+        return jsonify({"status": "done", "progress": 100})
+    errors = VERIFYING_THREADS[thread_id].errors
+    return jsonify({"progress": VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress, "status": "pending", "errors": errors})
 
 @app.route('/resources/import', methods=["GET"])
 @login_required(google)
@@ -369,9 +543,15 @@ def import_csv_to_calendar_api():
                         std_email=std_mail["email"]).first()
                     if cal_rec:
                         calendar_id = cal_rec.calendar_id_google
+                        # delete std_mail from event object
+                        # to prevent invitations to be sent to students.
+                        event["attendees"].remove(std_mail)
                     else:
-                        print("could not add event, continuing to next event")
+                        print("Calendar does not exist")
+                        print(event)
+                        print("_________")
                         continue
+
                     resp = google.post(
                         "/calendar/v3/calendars/{}/events".format(calendar_id),
                         json=event,
@@ -393,6 +573,7 @@ def import_csv_to_calendar_api():
                             print(e)
                     else:
                         print("Could not insert event")
+                        print(resp.text)
             flash(("Added {} events to calendar".format(len(all_events))),
                   category='success')
             return redirect(url_for('import_csv_to_calendar_api'))
@@ -505,6 +686,7 @@ def calendar_add():
                 calendar_name)),
                   category="error")
             return redirect(url_for("get_calendars"))
+        return redirect(url_for("get_calendars"))
     else:
         # Creating a google calenda and receiving the gcal ID from Google
         cal_record = Calendar.query.filter_by(summary=calendar_name).first()
@@ -596,9 +778,9 @@ def csv_tt_to_json_events(
         events_freq=1,
         max_events=None):
     dates = {
-        "1CPI": "2019/10/13",  # needs to be changed!
-        "2CPI": "2019/10/13",  # needs to be changed!
-        "1CS": "2019/10/20",  # needs to be changed!
+        "1CPI": "2019/11/17",  # needs to be changed!
+        "2CPI": "2019/12/01",  # needs to be changed!
+        "1CS": "2019/11/03",  # needs to be changed!
         "2CS": "2019/10/20",  # needs to be changed!
         "3CS": "2019/10/20"  # needs to be changed!
     }
