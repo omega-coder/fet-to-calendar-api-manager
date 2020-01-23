@@ -543,8 +543,6 @@ def import_csv_to_calendar_api():
                         std_email=std_mail["email"]).first()
                     if cal_rec:
                         calendar_id = cal_rec.calendar_id_google
-                        # delete std_mail from event object
-                        # to prevent invitations to be sent to students.
                         event["attendees"].remove(std_mail)
                     else:
                         print("Calendar does not exist")
