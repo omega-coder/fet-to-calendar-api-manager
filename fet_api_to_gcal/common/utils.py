@@ -78,7 +78,7 @@ def getDate(dates, promo, day, heure, minute):
 
 # print error text
 def perror(text):
-    print(bcolors.WARNING + text + bcolors.ENDC)
+    print(bcolors.FAIL + text + bcolors.ENDC)
 
 
 # print success text
