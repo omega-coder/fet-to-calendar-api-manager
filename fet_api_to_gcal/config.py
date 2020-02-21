@@ -16,7 +16,7 @@ class Config(object):
     DOMAIN_WHITELIST = ["esi.dz", "gmail.com"]
     EMAIL_WHITELIST = [
         "planification@esi.dz", "y_challal@esi.dz", "fy_cherief@esi.dz",
-        "isi@esi.dz"
+        "isi@esi.dz","shellmates@esi.dz"
     ]
 
 
