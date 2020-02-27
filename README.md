@@ -28,6 +28,9 @@ pip install -r requirements.txt
 ```
 ## 3. Run the app.
 
+**Note: Application port must be the same as the one specified in auth link at the google dev console**
+
+
 ```bash
     python app.py
 ```
@@ -38,13 +41,17 @@ Or use gunicorn server (**Recommended**)
     gunicorn --bind 0.0.0.0:5000 app:app 
 ``` 
 
+
+
+
 ## Built With
 
 * [Python3](https://www.python.org/) - The main used language.
-* [Flask](https://palletsprojects.com/p/flask/) - The web framework used.
+* [Flask](https://palletsprojects.com/p/flask/) - The web framework.
 * [Bootstrap 4 and MDB](https://getbootstrap.com/) - For the UI
 * [Javascript](https://www.javascript.com/) - Interaction between UI and Back-end
 * [Calendar API](https://developers.google.com/calendar/) - for events and calendars management.
+
 
 
 ## Authors
