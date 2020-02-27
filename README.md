@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-This project was developped using **Python 3**, so you obviously need **python 3** installed on your machine.You can download python [here](https://www.python.org/), make usre you download python 3 and preferably the last version.
+This project was developped using **Python 3**, so you obviously need **python 3** installed on your machine.You can download python [here](https://www.python.org/), make sure you download python 3 and preferably the last version.
 
 You can install the other requirements using pip from the requirement.txt file
 
