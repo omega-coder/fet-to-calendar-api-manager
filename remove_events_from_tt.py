@@ -3,13 +3,15 @@ import sys
 
 
 def main(filepath, event_names):
+
     f = open(filepath, "r")
     data = f.readlines()
 
     # open a file for the resulting filtered file
-    
+
     try:
-        result_file = open("{}_REMOVED_{}".format(filepath, "".join(event_names)), "w")
+        result_file = open(
+            "{}_REMOVED_{}".format(filepath, "".join(event_names)), "w")
     except Exception as e:
         print("Exception while opening result file: {}".format(e))
         sys.exit(1)
@@ -26,9 +28,14 @@ def main(filepath, event_names):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Script to filter/remove all events of a given name")
+    parser = argparse.ArgumentParser(
+        description="Script to filter/remove all events of a given name")
     parser.add_argument("-f", "--file", type=str, metavar='Path', dest='file')
-    parser.add_argument("-e", "--event", dest="event_names", action='append', default=[])
+    parser.add_argument("-e",
+                        "--event",
+                        dest="event_names",
+                        action='append',
+                        default=[])
 
     args = parser.parse_args()
     main(args.file, args.event_names)
