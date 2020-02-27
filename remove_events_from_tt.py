@@ -3,7 +3,12 @@ import sys
 
 
 def main(filepath, event_names):
-
+    """Remove all events inside of event_names list parameter from the FET generated timetable csv file.  
+    
+    Args:
+        filepath (str): path for the FET generated timetable csv file.
+        event_names (list): a list containing the event names (string values) to be deleted. 
+    """
     f = open(filepath, "r")
     data = f.readlines()
 
@@ -28,14 +33,22 @@ def main(filepath, event_names):
 
 
 if __name__ == "__main__":
+    # create an arguemnt parser
     parser = argparse.ArgumentParser(
         description="Script to filter/remove all events of a given name")
-    parser.add_argument("-f", "--file", type=str, metavar='Path', dest='file')
+    parser.add_argument("-f",
+                        "--file",
+                        type=str,
+                        metavar='Path',
+                        dest='file',
+                        help="Path to the FET generated csv timetable file.")
     parser.add_argument("-e",
                         "--event",
                         dest="event_names",
                         action='append',
                         default=[])
 
+    # Parse arguments
     args = parser.parse_args()
+    # call the main function
     main(args.file, args.event_names)
