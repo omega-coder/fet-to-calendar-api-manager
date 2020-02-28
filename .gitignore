@@ -7,4 +7,4 @@ fet_api_to_gcal/data/
 fet_api_to_gcal/uploads/*
 fet_api_to_gcal/app.db-journal
 testapp.py
-logas/*.log
+logs/*.log
