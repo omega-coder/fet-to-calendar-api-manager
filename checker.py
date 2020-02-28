@@ -17,7 +17,7 @@ dates = {
     "2CPI": "2020/02/23",  # ! needs to be changed accordingly!
     "1CS": "2020/02/23",   # ! needs to be changed accordingly!
     "2CS": "2020/02/23",   # ! needs to be changed accordingly!
-    "3CS": "2020/02/23"    # ! needs to be changed accordingly!
+    "3CS": "2020/02/23",    # ! needs to be changed accordingly!
     "1CPI": "2020/02/23",  # ! needs to be changed accordingly!
 }
 
