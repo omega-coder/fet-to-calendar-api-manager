@@ -8,8 +8,29 @@ import datetime
 import re
 
 
+
+def timestamped_filename(filename, fmt='%m-%d-%y-%H:%M:%S-{filename}'):
+    """Returns a timestamped log filename used with logging module.
+    
+    Args:
+        filename (str): a string for the filename to be timestamped.
+        fmt (str, optional): your timestamping format (No need to change it). Defaults to '%m-%d-%y-%H.%M.%S-{filename}'.
+    
+    Returns:
+        str: a timstamped filename given as parameter.
+    """    
+    return datetime.datetime.now().strftime(fmt).format(filename=filename)
+
 def login_required(google):
-    """Enforces authentication on a route"""
+    """Checks that a current user is authneticated with google before allowing the route visit.
+    
+    Args:
+        google (werkzeug.local.LocalProxy): A google local proxy used for google Oauth.
+    
+    Returns:
+        TODO: enchance the Returns documentation.   
+        decorated function: decorated route 
+    """    
     def decorated(func):
         @wraps(func)
         def decorated_route(*args, **kwargs):
@@ -67,6 +88,20 @@ class bcolors:
 
 
 def getDate(dates, promo, day, heure, minute):
+    """Returns a combined date-time value (formatted according to RFC3339).
+    
+    Args:
+        dates (dict): a dictionary type key: value with keys corresppnding to the study years
+                      and a value corresponding to the starting study date of that year.
+                      IMPORTANT: the starting date must correspond the the first day of the week (Sunday).
+        promo (str): string of the promotion year.
+        day (str): string of the event date (must be in french)
+        heure (str): string of the hour of the event
+        minute (str): string of the minute after the hour string
+    
+    Returns:
+        str: combined date-time value (formatted according to RFC3339).
+    """    
     plus = {"Dimanche": 0, "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4}
     dt = datetime.datetime.strptime(
         dates[promo], "%Y/%m/%d") + datetime.timedelta(
@@ -78,15 +113,33 @@ def getDate(dates, promo, day, heure, minute):
 
 # print error text
 def perror(text):
+    """utility to print an error with a red color to stdout
+    
+    Args:
+        text (str): string to be printed.
+    """    
     print(bcolors.FAIL + text + bcolors.ENDC)
 
 
 # print success text
 def psuccess(text):
+    """utility to print an explicit success with a green color to stdout
+    
+    Args:
+        text (str): string to be printed.
+    """    
     print(bcolors.OKGREEN + text + bcolors.ENDC)
 
 
 def check_google_calendar_id(google_cal_id):
+    """utility to verify a google calendar id passed as a parameter. 
+    
+    Args:
+        google_cal_id (str): string of the google calendar id
+    
+    Returns:
+        bool: True if the string in parameter is a verified google calendar id, else returns False 
+    """    
     return bool(
         re.match(r"esi\.dz_[a-z0-9]{26}@group\.calendar\.google\.com",
                  google_cal_id))
