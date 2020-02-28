@@ -1,12 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from flask import (flash, redirect, url_for, render_template, session,
-                   current_app)
-
-from functools import wraps
 import datetime
+import ntpath
 import re
+from functools import wraps
 
+from flask import (current_app, flash, redirect, render_template, session,
+                   url_for)
+
+
+
+def path_leaf(path):
+    """ Cross platform function to get the filename from any path. 
+    
+    Args:
+        path (ste): A string path.
+    
+    Returns:
+        str: the basename of the path
+    """    
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)
 
 
 def timestamped_filename(filename, fmt='%m-%d-%y-%H:%M:%S-{filename}'):
