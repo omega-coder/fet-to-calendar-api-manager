@@ -145,6 +145,16 @@ def psuccess(text):
     print(bcolors.OKGREEN + text + bcolors.ENDC)
 
 
+def success_str(text):
+    return "{} {} {}".format(bcolors.OKGREEN, text, bcolors.ENDC)
+
+def error_str(text):
+    return "{} {} {}".format(bcolors.FAIL, text, bcolors.ENDC)
+
+def info_str(text):
+    return "{} {} {}".format(bcolors.OKBLUE, text, bcolors.ENDC)
+
+
 def check_google_calendar_id(google_cal_id):
     """utility to verify a google calendar id passed as a parameter. 
     
