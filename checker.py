@@ -4,7 +4,7 @@ import sys
 from pprint import pprint
 
 from fet_api_to_gcal import db
-from fet_api_to_gcal.common.utils import getDate, perror, psuccess
+from fet_api_to_gcal.common.utils import getDate, perror, psuccess, path_leaf
 from fet_api_to_gcal.models import Calendar, Resource, Std_mail, Teacher
 
 
@@ -20,34 +20,6 @@ dates = {
     "3CS": "2020/02/23",    # ! needs to be changed accordingly!
     "1CPI": "2020/02/23",  # ! needs to be changed accordingly!
 }
-
-
-def check_teachers(teacher_file):
-    """Checks that all teachers from the FET timetable are present in the database
-    
-    Args:
-        teacher_file (str, required): path to a FET generated csv file for teachers.
-    
-    Returns:
-        dict: a dictionary with two keys, one for the operation status
-        and one for missing teachers when status is False else returns None
-    """
-    not_found = []
-
-    with open(teacher_file, "r") as teachers_f:
-        teachers = teachers_f.readlines()
-        total_teachers, i = len(teachers[1:]), 0
-        for teacher_name in teachers[1:]:
-            teacher_name = teacher_name.replace('"', '').strip()
-            teacher_obj = Teacher.query.filter_by(
-                fet_name=teacher_name).first()
-            if teacher_obj is None:
-                not_found.append(teacher_name)
-
-        if len(not_found) != 0:
-            return {"status": False, "missing_teachers": not_found}
-        else:
-            return {"status": True, "missing_teachers": None}
 
 
 def check_timetable_validity(timetable_path,
