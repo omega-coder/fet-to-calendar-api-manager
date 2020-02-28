@@ -56,7 +56,7 @@ Or use gunicorn server (**Recommended**)
 
 ## Authors
 
-* **CHERIEF Yassine** - *Initial work* - [omega-coder](https://omega-coder.me)
+* **CHERIEF Yassine** - *Initial work* - [omega-coder](https://omega-coder.ninja)
 
 ## License
 
