@@ -1,7 +1,7 @@
 import os
 from fet_api_to_gcal import app
 
-# set envionment variables
+# set envionment variables (resolves HTTPS issue for OAuth)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"

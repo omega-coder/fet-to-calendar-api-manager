@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from time import sleep
 import random
 import threading
@@ -15,7 +16,7 @@ from oauthlib.oauth2.rfc6749.errors import (InvalidClientIdError,
                                             InvalidGrantError,
                                             UnauthorizedClientError)
 from fet_api_to_gcal import config
-from fet_api_to_gcal.common.utils import getDate, login_required, check_google_calendar_id
+from fet_api_to_gcal.common.utils import getDate, login_required, check_google_calendar_id, perror
 from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
@@ -51,6 +52,8 @@ app.register_blueprint(google_bp, url_prefix="/login")
 
 from fet_api_to_gcal.models import (Calendar, Resource, Teacher, events__log,
                                     Std_mail, import_oprtation)
+from pprint import pprint
+import sys
 
 
 VERIFYING_THREADS = {}
@@ -298,6 +301,7 @@ def logout():
 
 @app.errorhandler(InvalidClientIdError)
 def token_expired(_):
+    import pdb; pdb.set_trace()
     del current_app.blueprints['google'].token
     flash('Your session has expired. Please submit the request again',
           'danger')
@@ -518,7 +522,7 @@ def import_csv_to_calendar_api():
             return redirect(request.url)
         file = request.files['file']
         if file.filename == "":
-            flash("No file selected for uploading", category='danger')
+            flash("No file selected for upload", category='danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -538,18 +542,37 @@ def import_csv_to_calendar_api():
                                                max_events=max_events,
                                                events_freq=events_freq)
             for event in all_events:
-                for std_mail in event["attendees"][1:-1]:
+                resource = None
+                teachers = []
+                std_sets_emails = []
+                if "resource" in event["attendees"][-1].keys():
+                    resource = event["attendees"][-1]
+                    event["attendees"].remove(resource)
+
+                for ev_att in event["attendees"]:
+                    if Teacher.query.filter_by(teacher_email=ev_att["email"]).first():
+                        teachers.append(ev_att)
+                    else:
+                        std_sets_emails.append(ev_att)
+                
+                event["attendees"].clear()
+                event["attendees"].extend(teachers)
+                if resource is not None:
+                    event["attendees"].append(resource)
+                for std_mail in std_sets_emails:
                     cal_rec = Calendar.query.filter_by(
                         std_email=std_mail["email"]).first()
                     if cal_rec:
                         calendar_id = cal_rec.calendar_id_google
-                        event["attendees"].remove(std_mail)
+                        #event["attendees"].remove(std_mail)
+                        #pprint(event)
                     else:
                         print("Calendar does not exist")
-                        print(event)
+                        pprint(event)
                         print("_________")
                         continue
-
+                    #pprint(event)
+                    #import pdb; pdb.set_trace()
                     resp = google.post(
                         "/calendar/v3/calendars/{}/events".format(calendar_id),
                         json=event,
@@ -776,11 +799,11 @@ def csv_tt_to_json_events(
         events_freq=1,
         max_events=None):
     dates = {
-        "1CPI": "2019/11/17",  # needs to be changed!
-        "2CPI": "2019/12/01",  # needs to be changed!
-        "1CS": "2019/11/03",  # needs to be changed!
-        "2CS": "2019/10/20",  # needs to be changed!
-        "3CS": "2019/10/20"  # needs to be changed!
+        "1CPI": "2020/02/23",  # needs to be changed!
+        "2CPI": "2020/02/23",  # needs to be changed!
+        "1CS": "2020/02/23",  # needs to be changed!
+        "2CS": "2020/02/23",  # needs to be changed!
+        "3CS": "2020/02/23"  # needs to be changed!
     }
 
     timezone = "Africa/Algiers"
@@ -835,7 +858,8 @@ def csv_tt_to_json_events(
                 __gevent__["attendees"].append(
                     {"email": teacher.teacher_email})
             else:
-                print("Teacher {} not found".format(teacher_name))
+                perror("Teacher {} not found (event index: {})".format(teacher_name, event_inx))
+        
         # students
         if event___old["std_set"] == "":
             continue
@@ -856,7 +880,8 @@ def csv_tt_to_json_events(
                     "email": res.resource_email,
                     "resource": True
                 })
-
+        else:
+            perror("Room empty in event index : {}".format(event_inx))
         # recurrence rule
         __gevent__["recurrence"] = [
             "RRULE:FREQ=WEEKLY;COUNT=" + str(events_freq)
