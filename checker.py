@@ -4,20 +4,19 @@ import sys
 from pprint import pprint
 
 from fet_api_to_gcal import db
-from fet_api_to_gcal.common.utils import getDate, perror, psuccess, path_leaf
+from fet_api_to_gcal.common.utils import (error_str, getDate, info_str,
+                                          path_leaf, perror, psuccess,
+                                          success_str, timestamped_filename)
 from fet_api_to_gcal.models import Calendar, Resource, Std_mail, Teacher
-
 
 # TODO: add proper logging to the script. (file + stdout).
 # TODO: add an arguemt parser to script.
 
-
-
 dates = {
     "2CPI": "2020/02/23",  # ! needs to be changed accordingly!
-    "1CS": "2020/02/23",   # ! needs to be changed accordingly!
-    "2CS": "2020/02/23",   # ! needs to be changed accordingly!
-    "3CS": "2020/02/23",    # ! needs to be changed accordingly!
+    "1CS": "2020/02/23",  # ! needs to be changed accordingly!
+    "2CS": "2020/02/23",  # ! needs to be changed accordingly!
+    "3CS": "2020/02/23",  # ! needs to be changed accordingly!
     "1CPI": "2020/02/23",  # ! needs to be changed accordingly!
 }
 
@@ -41,8 +40,31 @@ def check_timetable_validity(timetable_path,
         list: list of google styled events, each google event is a python dictionary.
     """
 
+    # SETUP LOGGING
+
+    log_filename = timestamped_filename(filename=path_leaf(timetable_path))
+
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        datefmt='%m-%d %H:%M:%S',
+        filename="./logs/{}_checker_script.log".format(log_filename),
+        filemode='w')
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.WARNING)
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+    logging.info(info_str("Started logging in file {}".format(log_filename)))
+
     timezone = "Africa/Algiers"
-    f = open(timetable_path, "r")
+    try:
+        f = open(timetable_path, "r")
+    except Exception as e:
+        logging.exception(
+            error_str("Exception while opening file {}".format(
+                path_leaf(timetable_path))))
     lines = f.readlines()[1::]
     all_events = []  # to hold all json gevents later!
     temp_dict_holder = {}
@@ -80,14 +102,17 @@ def check_timetable_validity(timetable_path,
 
     # ? 2nd phase
 
-
     # ? indexes are used to allow non-ordered events to be generated successfully.
+    logging.info(info_str("Started converting event to google events"))
     indexes = list(map(int, list(temp_dict_holder.keys())))
     for event_inx in indexes:
         try:
             event___old = temp_dict_holder[str(event_inx)]
         except KeyError as e:
-            print(e)
+            logging.exception(
+                error_str(
+                    "Exception in event at index {} thus will not be added".
+                    format(event_inx)))
         __gevent__ = {"summary": event___old["summary"]}
 
         # ? get attendees emails
@@ -99,20 +124,29 @@ def check_timetable_validity(timetable_path,
                 __gevent__["attendees"].append(
                     {"email": teacher.teacher_email})
             else:
-                perror("Teacher {} not found (event index: {})".format(
-                    teacher_name, event_inx))
+                logging.warning(
+                    error_str("Teacher {} not found (event index: {})".format(
+                        teacher_name, event_inx)))
 
-        # students
+        # students (important part)
         if event___old["std_set"] == "":
-            perror("Std_set empty in event index : {}".format(event_inx))
-            #pprint(event___old)
+            logging.error(
+                error_str(
+                    "Std_set empty in event index : {}, thus event is ignored".
+                    format(event_inx)))
             continue
+
         for std_set__ in event___old["std_set"].split("+"):
 
             std_mails_obj = Std_mail.query.filter_by(std_set=std_set__).first()
             if std_mails_obj is not None:
                 __gevent__["attendees"].append(
                     {"email": std_mails_obj.std_email})
+            else:
+                logging.error(
+                    error_str(
+                        "No Mapped email found for {}, thus calendar for it will be ignored"
+                        .format(std_set__)))
 
         # add room if existing
 
@@ -124,15 +158,18 @@ def check_timetable_validity(timetable_path,
                     "email": res.resource_email,
                     "resource": True
                 })
+            else:
+                logging.warning(
+                    error_str("Room {} not found in database".format(
+                        event___old["room"])))
         else:
-            perror("Room empty in event index : {}".format(event_inx))
-            #continue
-        # recurrence rule
+            logging.warning(
+                error_str("Room at event index {} is empty".format(event_inx)))
+
+        # ? recurrence rule
         __gevent__["recurrence"] = [
             "RRULE:FREQ=WEEKLY;COUNT=" + str(events_freq)
         ]
-        # set start and time
-        # print(event___old["std_set"].split(" ")[0])
         dateTime_start = getDate(dates, event___old["std_set"].split(" ")[0],
                                  event___old["Day"],
                                  event___old["start"].split("h")[0],
@@ -152,18 +189,47 @@ def check_timetable_validity(timetable_path,
         all_events.append(__gevent__)
 
         if len(all_events) == max_events:
+            logging.info(
+                success_str(
+                    "Converted {} events successfully (check log for warnings, if any)"
+                    .format(max_events)))
             return all_events
+    logging.info(
+        success_str(
+            "Converted {} events successfully (check log for warnings, if any)"
+            .format(len(all_events))))
     return all_events
 
 
 def check_google_event(gevent):
-
+    """Checks if a google calendar object can be sent to the API without any errors/.\
+        So, any errors would be either from the API itself or the network status.
+    
+    Args:
+        gevent (dict): A google calendar event 
+    
+    Raises:
+        NotImplementedError: Obviously, this is not yet implemented, daah!
+    """
     raise NotImplementedError
 
 
 if __name__ == "__main__":
-    tt_path = sys.argv[1]
-    all_events = check_timetable_validity(timetable_path=tt_path)
+    # ? create an arguemnt parser
+    parser = argparse.ArgumentParser(
+        description="Script to check FET timetable file for any errors/warnings before running the import" \
+                    " operation from the web app")
+    parser.add_argument("-f",
+                        "--file",
+                        type=str,
+                        metavar='Path',
+                        dest='file',
+                        help="Path to the FET generated timetable CSV file.")
+
+    # ? Parse arguments
+    args = parser.parse_args()
+    tt_path = args.file
+    all_events = check_timetable_validity(timetable_path=tt_path, dates=dates)
     for event in all_events:
         resource = None
         teachers = []
@@ -188,10 +254,6 @@ if __name__ == "__main__":
                 std_email=std_mail["email"]).first()
             if cal_rec:
                 calendar_id = cal_rec.calendar_id_google
-                """
-                #import pdb; pdb.set_trace()
-                """
             else:
-                print("Calendar does not exist")
-                print("_________")
+                perror("Calendar does not exist, check please")
                 continue
