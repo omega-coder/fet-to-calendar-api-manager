@@ -20,6 +20,9 @@ from fet_api_to_gcal.common.utils import getDate, login_required, check_google_c
 from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
+
+# ? make sure to change this when deploying the app 
+
 app.config.from_object(config.DevelopmentConfig)
 
 CORS(app)
@@ -32,16 +35,27 @@ app.config["ALLOWED_EXTENSIONS"] = ALLOWED_EXTENSIONS
 
 
 def allowed_file(filename):
+    """Checks if filename is authorized for upload or not
+    
+    Args:
+        filename (str): a filename string.
+    
+    Returns:
+        bool: True if filename is allowedm else returns False
+    """    
     return '.' in filename and filename.rsplit(
         '.', 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
 
 
-# SECURITY params config
-
+# ? SECURITY params config
+# ? sets HttpOnly flag for cookies to mitigate the risk of getting the cookie from client side. (Javascript)
+# ? Sets SameSite flag to Lax
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
 )
+
+# ? Create a google blueprint and sets scope
 
 google_bp = make_google_blueprint(
     scope=["profile", "email", "https://www.googleapis.com/auth/calendar"],
@@ -56,178 +70,14 @@ from pprint import pprint
 import sys
 
 
-VERIFYING_THREADS = {}
-
-
 class VerifyFileThread(threading.Thread):
-    def __init__(self, filename):
-        self.progress = 0
-        self.filename = filename
-        self.max_events = None
-        self.events_freq = 1
-        self.errors = []
-        super().__init__()
-
-    def run(self):
-        dates = {
-            "1CPI": "2019/10/13",  # needs to be changed!
-            "2CPI": "2019/10/13",  # needs to be changed!
-            "1CS": "2019/10/20",  # needs to be changed!
-            "2CS": "2019/10/20",  # needs to be changed!
-            "3CS": "2019/10/20"  # needs to be changed!
-        }
-
-        timezone = "Africa/Algiers"
-        f = open(self.filename, "r")
-        lines = f.readlines()[1::]
-        all_events = []  # to hold all json gevents later!
-        temp_dict_holder = {}
-        for line in lines:
-            line_splitted = list(
-                map(lambda x: x.replace('"', ''),
-                    line.strip().split(",")))[:-1]
-            if "Pause" not in line_splitted[2]:
-                if line_splitted[0] not in list(temp_dict_holder.keys()):
-                    start_end = line_splitted[2].split("-")
-                    temp_dict_holder[line_splitted[0]] = {
-                        "Day":
-                        line_splitted[1],
-                        "start":
-                        start_end[0],
-                        "end":
-                        start_end[1],
-                        "teachers":
-                        line_splitted[5].split("+"),
-                        "room":
-                        line_splitted[-1].upper(),
-                        "summary":
-                        "{} {} {}".format(line_splitted[-2], line_splitted[-4],
-                                        line_splitted[-3]),
-                        "std_set":
-                        line_splitted[3]
-                    }
-                else:
-                    temp_dict_holder[
-                        line_splitted[0]]["end"] = line_splitted[2].split("-")[1]
-            else:
-                continue
-        # 2nd phase
-        indexes = list(map(int, list(temp_dict_holder.keys())))
-        for event_inx in indexes:
-            try:
-                event___old = temp_dict_holder[str(event_inx)]
-            except KeyError as e:
-                print(e)
-            __gevent__ = {"summary": event___old["summary"]}
-
-            # get attendees emails
-            __gevent__["attendees"] = []
-            # teachers
-            for teacher_name in event___old["teachers"]:
-                teacher = Teacher.query.filter_by(fet_name=teacher_name).first()
-                if teacher is not None:
-                    __gevent__["attendees"].append(
-                        {"email": teacher.teacher_email})
-                else:
-                    self.errors.append({"error": "Teacher {} not found".format(teacher_name)})
-                    print("Teacher {} not found".format(teacher_name))
-            # students
-            if event___old["std_set"] == "":
-                self.errors.append({"error": "student set empty in event index {}".format(event_inx)})
-                continue
-            for std_set__ in event___old["std_set"].split("+"):
-
-                std_mails_obj = Std_mail.query.filter_by(std_set=std_set__).first()
-                if std_mails_obj is not None:
-                    __gevent__["attendees"].append(
-                        {"email": std_mails_obj.std_email})
-
-            # add room if existing
-
-            if event___old["room"] != "":
-                res = Resource.query.filter_by(
-                    resource_name=event___old["room"]).first()
-                if res is not None:
-                    __gevent__["attendees"].append({
-                        "email": res.resource_email,
-                        "resource": True
-                    })
-            else:
-                self.errors.append({"error": "No room specified in event index {}".format(event_inx)})
-            # recurrence rule
-            __gevent__["recurrence"] = [
-                "RRULE:FREQ=WEEKLY;COUNT=" + str(self.events_freq)
-            ]
-            # set start and time
-            # print(event___old["std_set"].split(" ")[0])
-            dateTime_start = getDate(dates, event___old["std_set"].split(" ")[0],
-                                        event___old["Day"],
-                                        event___old["start"].split("h")[0],
-                                        event___old["start"].split("h")[1])
-            dateTime_end = getDate(dates, event___old["std_set"].split()[0],
-                                event___old["Day"],
-                                event___old["end"].split("h")[0],
-                                event___old["end"].split("h")[1])
-            __gevent__["start"] = {
-                "timeZone": timezone,
-                "dateTime": dateTime_start,
-            }
-            __gevent__["end"] = {
-                "timeZone": timezone,
-                "dateTime": dateTime_end,
-            }
-            all_events.append(__gevent__)
-            self.progress = int(float(len(all_events) / len(temp_dict_holder)) * 100)
-        self.progress = 100
-
-
-@app.route("/verifyfile", methods=["GET", "POST"])
-def verifyfile():
-    global VERIFYING_THREADS
-    if request.method == "GET":
-        if "VERIFY_THREAD_ID" in flask.session:
-            progress = VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress
-            print(progress)
-            print("IS ALIVE" + str(VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].is_alive()))
-            return render_template("verify_file.html.j2", progress=progress, show_progress_js=True, input_disabled=True, thread_id=flask.session["VERIFY_THREAD_ID"])
-        else:
-            return render_template("verify_file.html.j2", progress=None, show_progress_js=True, input_disabled=False)
-
-    elif request.method == "POST":
-        if 'file' not in request.files:
-            flash(("No file part"), category='danger')
-            return redirect(request.url)
-        file = request.files['file']
-        if file.filename == "":
-            flash("No file selected for uploading", category='danger')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file__path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-            file.save(file__path)
-            thread_id = random.randint(0, 10000)
-            VERIFYING_THREADS[thread_id] = VerifyFileThread(filename=file__path)
-            flask.session["VERIFY_THREAD_ID"] = thread_id
-            VERIFYING_THREADS[thread_id].start()
-            progress = VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress
-            return render_template("verify_file.html.j2", progress=1, show_progress_js=True, input_disabled=True, thread_id=flask.session["VERIFY_THREAD_ID"])
-            # return redirect(request.url)
-        else:
-            flash('Allowed file types are: csv', category="info")
-            return redirect(request.url)
-
+    raise NotImplementedError
 
 @app.route("/progress/thread/<int:thread_id>")
 def progress(thread_id):
-    global VERIFYING_THREADS
-    if "VERIFY_THREAD_ID" not in flask.session.keys():
-        return jsonify({"status": "done", "progress": 100})
-    elif "VERIFY_THREAD_ID" in flask.session.keys() and not VERIFYING_THREADS[thread_id].is_alive():
-        flask.session.pop("VERIFY_THREAD_ID")
-        return jsonify({"status": "done", "progress": 100})
-    errors = VERIFYING_THREADS[thread_id].errors
-    return jsonify({"progress": VERIFYING_THREADS[flask.session["VERIFY_THREAD_ID"]].progress, "status": "pending", "errors": errors})
+    raise NotImplementedError
 
+# ! DEPRECATED: DO NOT ACCESS
 @app.route('/resources/import', methods=["GET"])
 @login_required(google)
 def add_resources_to_db():
@@ -251,16 +101,17 @@ def add_resources_to_db():
 @app.route("/salles")
 @login_required(google)
 def salles():
-    all_events = csv_tt_to_json_events(max_events=500)
-    return jsonify(all_events)
+    raise NotImplementedError
 
 
 @app.route("/")
 @login_required(google)
 def index():
+    # ? Make sure user is authorized to access
     if not google.authorized:
         return flask.redirect(url_for("google.login"))
     else:
+        # ? Get name an email from the flask session
         user_data = {
             "name": flask.session["name"],
             "email": flask.session["account"]
@@ -272,7 +123,11 @@ def index():
 
 @app.route('/logout')
 def logout():
-    """Revokes token and empties session"""
+    """Revokes the access token of the current user on the app.
+    
+    Returns:
+        Redirect: Redirect to a url depending on exceptions 
+    """    
     if google.authorized:
         try:
             google.get(
@@ -298,10 +153,12 @@ def logout():
             return redirect(url_for('google.login'))
     return redirect(url_for('google.login'))
 
+# ! following handler is inconsistent
 
 @app.errorhandler(InvalidClientIdError)
 def token_expired(_):
-    import pdb; pdb.set_trace()
+    """delete the current app google access token when session is expired
+    """    
     del current_app.blueprints['google'].token
     flash('Your session has expired. Please submit the request again',
           'danger')
@@ -310,6 +167,9 @@ def token_expired(_):
 
 @app.errorhandler(InvalidGrantError)
 def invalid_grant(_):
+    """Handles the Invalid Grant error when doing Oauth
+    
+    """    
     del current_app.blueprints['google'].token
     flash(("InvalidGrant Error"), category="danger")
     return redirect(url_for('index'))
@@ -318,6 +178,8 @@ def invalid_grant(_):
 @app.route("/api/v1/calendars")
 @login_required(google)
 def calendars():
+    """Fetches all calendars of the logged in user with name, calendar id and accessRole on that calendar. 
+    """    
     if not google.authorized:
         return flask.redirect(url_for("google.login"))
 
@@ -338,6 +200,16 @@ def calendars():
            methods=["GET", "DELETE"])
 @login_required(google)
 def delete_event(calendar_id, event_id):
+    """Deletes an event identified by event_id from the current user calendar identified by 
+        a google calendar id
+    
+    Args:
+        calendar_id (str): A google calendar id
+        event_id (str): A google event id.
+    
+    Returns:
+        JSON object: A json representation of the operation status.
+    """    
     if request.method == "DELETE":
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
             calendar_id, event_id))
@@ -357,6 +229,14 @@ def delete_event(calendar_id, event_id):
 @app.route("/operation/delete/<int:id_import>", methods=["GET"])
 @login_required(google)
 def delete_importation(id_import):
+    """Delete a whole import operation with all events associated with it.
+    
+    Args:
+        id_import (int): the import id of the operation
+    
+    Returns:
+        Redirect: Redirect to the operation route, 302 http code
+    """    
     delete_event_req_params = {"sendUpdates": "none"}
     events = events__log.query.filter_by(import_id=id_import).all()
     for event in events:
@@ -378,6 +258,11 @@ def delete_importation(id_import):
 @app.route("/operations", methods=["GET"])
 @login_required(google)
 def operations():
+    """Renders all import operations from database. 
+    
+    Returns:
+        [type]: [description]
+    """    
     if request.method == "GET":
         try:
             operations = db.session.query(import_oprtation).order_by(
@@ -393,12 +278,22 @@ def operations():
 
 
 def get_buildings():
+    """Gets all buildings from database
+    
+    Returns:
+        list: All buildings from the database 
+    """    
     return [str(b[0]) for b in db.session.query(Resource.building).distinct()]
 
 
 @app.route("/teacher/add", methods=["POST"])
 @login_required(google)
 def teacher_add_to_db():
+    """Adds a teacher to database
+    
+    Returns:
+        Redirect: Redirects to teachers list route
+    """    
     if request.method == "POST":
         fet_name = request.form["fet_name"]
         fullname = request.form["fullname"]
@@ -417,10 +312,18 @@ def teacher_add_to_db():
             return redirect(url_for("teacher_list")), 302
 
 
-# token is not required for this route
-# the following route is used for AJAX requests from UI to get teacher infos.
+# ? token is not required for this route
+# ? the following route is used for AJAX requests from UI to get teacher infos.
 @app.route("/api/v1/teachers/<int:teacher_id>")
 def teacher_get(teacher_id):
+    """Returns all informations of a teacher stored in database.
+    
+    Args:
+        teacher_id (int): Teacher id to be mapped to database.
+    
+    Returns:
+        JSON dump: Teacher informations from database when teachers exists, else returns an error status
+    """    
     try:
         teacher_obj = Teacher.query.filter_by(teacher_id=teacher_id).first()
         resp = {
@@ -434,10 +337,18 @@ def teacher_get(teacher_id):
         return jsonify({"status": "error", "message": str(e)})
 
 
-# token is not required for this route
-# the following route is used for AJAX requests from UI to get calendar infos.
+# ? token is not required for this route
+# ? the following route is used for AJAX requests from UI to get calendar infos.
 @app.route("/api/v1/calendars/<int:calendar_id>")
 def calendar_get(calendar_id):
+    """Returns all calendar infos given a calendar id
+    
+    Args:
+        calendar_id (int): Maps to primary key of the calendar in database 
+    
+    Returns:
+        JSON: JSON dump of all calendar informations from database
+    """    
     try:
         calendar_obj = Calendar.query.filter_by(id=calendar_id).first()
         resp = {
@@ -454,6 +365,9 @@ def calendar_get(calendar_id):
 @app.route("/teacher/edit/", methods=["POST"])
 @login_required(google)
 def edit_teacher():
+    """Edits a teacher's informations when called with a POST request.
+    # TODO: check POST data to return more accurate error messages.
+    """    
     if request.method == "POST":
         try:
             teacher_id = int(request.form["teacher_id"])
@@ -478,6 +392,12 @@ def edit_teacher():
 @app.route("/teacher/delete/<int:teacher_id>", methods=["GET"])
 @login_required(google)
 def delete_teacher(teacher_id):
+    """Deletes a teacher identified by an id (primary key)
+    
+    Args:
+        teacher_id (int): Maps to primary key of the teacher in database.
+    
+    """    
     try:
         teacher = Teacher.query.filter_by(teacher_id=teacher_id).first()
         db.session.delete(teacher)
@@ -493,6 +413,9 @@ def delete_teacher(teacher_id):
 @app.route("/teachers", methods=["GET"])
 @login_required(google)
 def teacher_list():
+    """Renders all teachers present in database.
+    
+    """    
     if request.method == "GET":
         # get all teacher records from teachers tablename
         try:
@@ -510,6 +433,10 @@ def teacher_list():
 @app.route("/import", methods=["GET", "POST"])
 @login_required(google)
 def import_csv_to_calendar_api():
+    """The main route of the Project.\
+        If requested with a GET: renders the page of the import operation.
+        If requested with POST: Starts importing events in the file to be uploaded present in the POST data.
+    """    
     if request.method == "GET":
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
@@ -564,15 +491,11 @@ def import_csv_to_calendar_api():
                         std_email=std_mail["email"]).first()
                     if cal_rec:
                         calendar_id = cal_rec.calendar_id_google
-                        #event["attendees"].remove(std_mail)
-                        #pprint(event)
                     else:
                         print("Calendar does not exist")
                         pprint(event)
                         print("_________")
                         continue
-                    #pprint(event)
-                    #import pdb; pdb.set_trace()
                     resp = google.post(
                         "/calendar/v3/calendars/{}/events".format(calendar_id),
                         json=event,
@@ -606,6 +529,9 @@ def import_csv_to_calendar_api():
 @app.route("/calendars", methods=["GET"])
 @login_required(google)
 def get_calendars():
+    """Renders all calendars from Database
+    
+    """    
     if request.method == "GET":
         try:
             calendars = db.session.query(Calendar).order_by(Calendar.id).all()
@@ -622,6 +548,9 @@ def get_calendars():
 @app.route("/calendar/edit/", methods=["POST"])
 @login_required(google)
 def edit_calendar():
+    """Edit calendar informations according to the data in the POST request. 
+    
+    """    
     if request.method == "POST":
         try:
             calendar_id = int(request.form["calendar_id"])
@@ -643,6 +572,14 @@ def edit_calendar():
 
 
 def new_calendar(calendar_name):
+    """Creates a new calendar in the google calendar service, using calendar API
+    
+    Args:
+        calendar_name (str): A string of the calendar name to be created.
+    
+    Returns:
+        JSON: returns a JSON reponse from the calendar API, returns None in case of error.
+    """    
     if google.authorized:
         calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
         resp = google.post("/calendar/v3/calendars", json=calendar__)
@@ -654,7 +591,7 @@ def new_calendar(calendar_name):
     else:
         return None
 
-
+# ! DEPRECATED: DO NOT USE
 @app.route("/calendar/delete/<string:gcalendar_id>")
 @login_required(google)
 def delete_calendar(gcalendar_id):
@@ -665,6 +602,15 @@ def delete_calendar(gcalendar_id):
 @app.route("/api/v1/calendar/add/<string:summary>/<string:std_email>")
 @login_required(google)
 def add_calendar(summary, std_email):
+    """Add a calendar to the database using a student_email and a calendar name (summary) as parameters.
+    
+    Args:
+        summary (str): a string of the calendar name
+        std_email (str): a string of the calendar student email.
+    
+    Returns:
+        JSON: Reponse from the calendar API of the calendar creation status.
+    """    
     cal_record = Calendar.query.filter_by(summary=summary).first()
     if cal_record is None:
         calendar__ = {'summary': summary, 'timeZone': 'Africa/Algiers'}
@@ -691,6 +637,9 @@ def add_calendar(summary, std_email):
 @app.route("/calendar/add", methods=["POST"])
 @login_required(google)
 def calendar_add():
+    """Adds a calendar to the database according to the infos in POST data.\
+        Also creates the calendar in google calendar service if no google_calendar_id is present in POST data. 
+    """    
     calendar_name = request.form["calendar_name"]
     std_email = request.form["std_email"]
     google_calendar_id = request.form["google_calendar_id"]
@@ -709,7 +658,7 @@ def calendar_add():
             return redirect(url_for("get_calendars"))
         return redirect(url_for("get_calendars"))
     else:
-        # Creating a google calenda and receiving the gcal ID from Google
+        # Creating a google calendar and receiving the gcal ID from Google
         cal_record = Calendar.query.filter_by(summary=calendar_name).first()
         if cal_record is None:
             calendar__ = {
@@ -747,6 +696,8 @@ def calendar_add():
 @app.route("/calendars/import", methods=["GET", "POST"])
 @login_required(google)
 def import_calendars():
+    """Imports calendars from a json file returned by calendar api.
+    """    
     if request.method == "GET":
         return render_template('calendars_import.html.j2',
                                title='Import Calendars')
@@ -777,6 +728,8 @@ def import_calendars():
                     else:
                         print(resp.json())
                         calendar_id = None
+                    # ? I dont know if this is necessary, but you may be blocked by google if you initiate too many calendar 
+                    # ? creation requests.
                     sleep(5)
                     if calendar_id is not None:
                         cal_rec = Calendar(calendar_id_google=calendar_id,
@@ -795,9 +748,20 @@ def import_calendars():
 
 
 def csv_tt_to_json_events(
-        filename="fet_api_to_gcal/data/ESI_2019_01_10_14v7_timetable.csv",
+        filename,
         events_freq=1,
         max_events=None):
+    """Converts event form a FET csv generated timetable file to google calendar events
+    
+    Args:
+        filename (str): path to the timetable csv file generated by FET.
+        events_freq (int, optional): frequency of the generated google events. Defaults to 1.
+        max_events (int, optional): maximum number of gogole events to be generated.If None, then all
+                                    the event in timetable_path will be generated. Defaults to None.
+    
+    Returns:
+        list: list of google styled events, each google event is a python dictionary.
+    """    
     dates = {
         "1CPI": "2020/02/23",  # needs to be changed!
         "2CPI": "2020/02/23",  # needs to be changed!
@@ -912,6 +876,11 @@ def csv_tt_to_json_events(
 
 @app.errorhandler(404)
 def page_not_found(e):
+    """Handles the http 404 error retuned by server.
+    
+    Args:
+        e (werkzeug.exceptions.NotFound): A werkzeug NotFound exception.
+    """
     user_data = user_data = {
         "name": flask.session["name"],
         "email": flask.session["account"]
