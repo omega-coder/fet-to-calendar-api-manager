@@ -1,6 +1,6 @@
 # FET Timetable to Google Calendar
 
-Export FET generated timetable (School schedule timetable) to Google Calendar using google calendar API
+Export FET generated timetable (School schedule timetable) to Google Calendar automatically using google calendar API.
 
 ## Getting Started
 
@@ -64,4 +64,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* NOT YET.
+* M. BATATA Soufiane (Enseignant Chercheur @ ESI).
+* M. CHALLAL Yacine (Professor @ ESI)
