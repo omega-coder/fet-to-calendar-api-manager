@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 app = flask.Flask(__name__)
 
-# ? make sure to change this when deploying the app 
+# ? make sure to change this when deploying the app
 
 app.config.from_object(config.DevelopmentConfig)
 
@@ -33,6 +33,14 @@ migrate = Migrate(app, db)
 ALLOWED_EXTENSIONS = set(['csv'])
 app.config["ALLOWED_EXTENSIONS"] = ALLOWED_EXTENSIONS
 
+dates = {
+    "1CPI": "2020/02/23",
+    "2CPI": "2020/02/23",
+    "1CS": "2020/02/23",
+    "2CS": "2020/02/23",
+    "3CS": "2020/02/23"
+}
+
 
 def allowed_file(filename):
     """Checks if filename is authorized for upload or not
@@ -42,7 +50,7 @@ def allowed_file(filename):
     
     Returns:
         bool: True if filename is allowedm else returns False
-    """    
+    """
     return '.' in filename and filename.rsplit(
         '.', 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
 
@@ -73,9 +81,11 @@ import sys
 class VerifyFileThread(threading.Thread):
     raise NotImplementedError
 
+
 @app.route("/progress/thread/<int:thread_id>")
 def progress(thread_id):
     raise NotImplementedError
+
 
 # ! DEPRECATED: DO NOT ACCESS
 @app.route('/resources/import', methods=["GET"])
@@ -127,7 +137,7 @@ def logout():
     
     Returns:
         Redirect: Redirect to a url depending on exceptions 
-    """    
+    """
     if google.authorized:
         try:
             google.get(
@@ -153,12 +163,14 @@ def logout():
             return redirect(url_for('google.login'))
     return redirect(url_for('google.login'))
 
+
 # ! following handler is inconsistent
+
 
 @app.errorhandler(InvalidClientIdError)
 def token_expired(_):
     """delete the current app google access token when session is expired
-    """    
+    """
     del current_app.blueprints['google'].token
     flash('Your session has expired. Please submit the request again',
           'danger')
@@ -169,7 +181,7 @@ def token_expired(_):
 def invalid_grant(_):
     """Handles the Invalid Grant error when doing Oauth
     
-    """    
+    """
     del current_app.blueprints['google'].token
     flash(("InvalidGrant Error"), category="danger")
     return redirect(url_for('index'))
@@ -179,7 +191,7 @@ def invalid_grant(_):
 @login_required(google)
 def calendars():
     """Fetches all calendars of the logged in user with name, calendar id and accessRole on that calendar. 
-    """    
+    """
     if not google.authorized:
         return flask.redirect(url_for("google.login"))
 
@@ -209,7 +221,7 @@ def delete_event(calendar_id, event_id):
     
     Returns:
         JSON object: A json representation of the operation status.
-    """    
+    """
     if request.method == "DELETE":
         resp = google.delete("/calendar/v3/calendars/{}/events/{}/".format(
             calendar_id, event_id))
@@ -236,7 +248,7 @@ def delete_importation(id_import):
     
     Returns:
         Redirect: Redirect to the operation route, 302 http code
-    """    
+    """
     delete_event_req_params = {"sendUpdates": "none"}
     events = events__log.query.filter_by(import_id=id_import).all()
     for event in events:
@@ -262,7 +274,7 @@ def operations():
     
     Returns:
         [type]: [description]
-    """    
+    """
     if request.method == "GET":
         try:
             operations = db.session.query(import_oprtation).order_by(
@@ -282,7 +294,7 @@ def get_buildings():
     
     Returns:
         list: All buildings from the database 
-    """    
+    """
     return [str(b[0]) for b in db.session.query(Resource.building).distinct()]
 
 
@@ -293,7 +305,7 @@ def teacher_add_to_db():
     
     Returns:
         Redirect: Redirects to teachers list route
-    """    
+    """
     if request.method == "POST":
         fet_name = request.form["fet_name"]
         fullname = request.form["fullname"]
@@ -323,7 +335,7 @@ def teacher_get(teacher_id):
     
     Returns:
         JSON dump: Teacher informations from database when teachers exists, else returns an error status
-    """    
+    """
     try:
         teacher_obj = Teacher.query.filter_by(teacher_id=teacher_id).first()
         resp = {
@@ -348,7 +360,7 @@ def calendar_get(calendar_id):
     
     Returns:
         JSON: JSON dump of all calendar informations from database
-    """    
+    """
     try:
         calendar_obj = Calendar.query.filter_by(id=calendar_id).first()
         resp = {
@@ -367,7 +379,7 @@ def calendar_get(calendar_id):
 def edit_teacher():
     """Edits a teacher's informations when called with a POST request.
     # TODO: check POST data to return more accurate error messages.
-    """    
+    """
     if request.method == "POST":
         try:
             teacher_id = int(request.form["teacher_id"])
@@ -397,7 +409,7 @@ def delete_teacher(teacher_id):
     Args:
         teacher_id (int): Maps to primary key of the teacher in database.
     
-    """    
+    """
     try:
         teacher = Teacher.query.filter_by(teacher_id=teacher_id).first()
         db.session.delete(teacher)
@@ -415,7 +427,7 @@ def delete_teacher(teacher_id):
 def teacher_list():
     """Renders all teachers present in database.
     
-    """    
+    """
     if request.method == "GET":
         # get all teacher records from teachers tablename
         try:
@@ -436,7 +448,7 @@ def import_csv_to_calendar_api():
     """The main route of the Project.\
         If requested with a GET: renders the page of the import operation.
         If requested with POST: Starts importing events in the file to be uploaded present in the POST data.
-    """    
+    """
     if request.method == "GET":
         return make_response(render_template('import.html.j2'), 200)
     elif request.method == "POST":
@@ -477,11 +489,12 @@ def import_csv_to_calendar_api():
                     event["attendees"].remove(resource)
 
                 for ev_att in event["attendees"]:
-                    if Teacher.query.filter_by(teacher_email=ev_att["email"]).first():
+                    if Teacher.query.filter_by(
+                            teacher_email=ev_att["email"]).first():
                         teachers.append(ev_att)
                     else:
                         std_sets_emails.append(ev_att)
-                
+
                 event["attendees"].clear()
                 event["attendees"].extend(teachers)
                 if resource is not None:
@@ -531,7 +544,7 @@ def import_csv_to_calendar_api():
 def get_calendars():
     """Renders all calendars from Database
     
-    """    
+    """
     if request.method == "GET":
         try:
             calendars = db.session.query(Calendar).order_by(Calendar.id).all()
@@ -550,7 +563,7 @@ def get_calendars():
 def edit_calendar():
     """Edit calendar informations according to the data in the POST request. 
     
-    """    
+    """
     if request.method == "POST":
         try:
             calendar_id = int(request.form["calendar_id"])
@@ -579,7 +592,7 @@ def new_calendar(calendar_name):
     
     Returns:
         JSON: returns a JSON reponse from the calendar API, returns None in case of error.
-    """    
+    """
     if google.authorized:
         calendar__ = {'summary': calendar_name, 'timeZone': 'Africa/Algiers'}
         resp = google.post("/calendar/v3/calendars", json=calendar__)
@@ -590,6 +603,7 @@ def new_calendar(calendar_name):
             return None
     else:
         return None
+
 
 # ! DEPRECATED: DO NOT USE
 @app.route("/calendar/delete/<string:gcalendar_id>")
@@ -610,7 +624,7 @@ def add_calendar(summary, std_email):
     
     Returns:
         JSON: Reponse from the calendar API of the calendar creation status.
-    """    
+    """
     cal_record = Calendar.query.filter_by(summary=summary).first()
     if cal_record is None:
         calendar__ = {'summary': summary, 'timeZone': 'Africa/Algiers'}
@@ -639,7 +653,7 @@ def add_calendar(summary, std_email):
 def calendar_add():
     """Adds a calendar to the database according to the infos in POST data.\
         Also creates the calendar in google calendar service if no google_calendar_id is present in POST data. 
-    """    
+    """
     calendar_name = request.form["calendar_name"]
     std_email = request.form["std_email"]
     google_calendar_id = request.form["google_calendar_id"]
@@ -697,7 +711,7 @@ def calendar_add():
 @login_required(google)
 def import_calendars():
     """Imports calendars from a json file returned by calendar api.
-    """    
+    """
     if request.method == "GET":
         return render_template('calendars_import.html.j2',
                                title='Import Calendars')
@@ -728,7 +742,7 @@ def import_calendars():
                     else:
                         print(resp.json())
                         calendar_id = None
-                    # ? I dont know if this is necessary, but you may be blocked by google if you initiate too many calendar 
+                    # ? I dont know if this is necessary, but you may be blocked by google if you initiate too many calendar
                     # ? creation requests.
                     sleep(5)
                     if calendar_id is not None:
@@ -747,10 +761,7 @@ def import_calendars():
             return render_template('calendars_import.html.j2'), 200
 
 
-def csv_tt_to_json_events(
-        filename,
-        events_freq=1,
-        max_events=None):
+def csv_tt_to_json_events(filename, dates, events_freq=1, max_events=None):
     """Converts event form a FET csv generated timetable file to google calendar events
     
     Args:
@@ -761,14 +772,7 @@ def csv_tt_to_json_events(
     
     Returns:
         list: list of google styled events, each google event is a python dictionary.
-    """    
-    dates = {
-        "1CPI": "2020/02/23",  # needs to be changed!
-        "2CPI": "2020/02/23",  # needs to be changed!
-        "1CS": "2020/02/23",  # needs to be changed!
-        "2CS": "2020/02/23",  # needs to be changed!
-        "3CS": "2020/02/23"  # needs to be changed!
-    }
+    """
 
     timezone = "Africa/Algiers"
     f = open(filename, "r")
@@ -822,8 +826,9 @@ def csv_tt_to_json_events(
                 __gevent__["attendees"].append(
                     {"email": teacher.teacher_email})
             else:
-                perror("Teacher {} not found (event index: {})".format(teacher_name, event_inx))
-        
+                perror("Teacher {} not found (event index: {})".format(
+                    teacher_name, event_inx))
+
         # students
         if event___old["std_set"] == "":
             continue
