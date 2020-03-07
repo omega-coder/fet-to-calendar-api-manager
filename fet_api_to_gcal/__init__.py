@@ -79,7 +79,9 @@ import sys
 
 
 class VerifyFileThread(threading.Thread):
-    raise NotImplementedError
+    def __init__(self):
+        self.test = 1
+
 
 
 @app.route("/progress/thread/<int:thread_id>")
