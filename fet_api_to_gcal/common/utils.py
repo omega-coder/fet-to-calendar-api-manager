@@ -9,7 +9,6 @@ from flask import (current_app, flash, redirect, render_template, session,
                    url_for)
 
 
-
 def path_leaf(path):
     """ Cross platform function to get the filename from any path. 
     
@@ -18,7 +17,7 @@ def path_leaf(path):
     
     Returns:
         str: the basename of the path
-    """    
+    """
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
 
@@ -32,8 +31,9 @@ def timestamped_filename(filename, fmt='%m-%d-%y-%H:%M:%S-{filename}'):
     
     Returns:
         str: a timstamped filename given as parameter.
-    """    
+    """
     return datetime.datetime.now().strftime(fmt).format(filename=filename)
+
 
 def login_required(google):
     """Checks that a current user is authneticated with google before allowing the route visit.
@@ -44,7 +44,7 @@ def login_required(google):
     Returns:
         TODO: enchance the Returns documentation.   
         decorated function: decorated route 
-    """    
+    """
     def decorated(func):
         @wraps(func)
         def decorated_route(*args, **kwargs):
@@ -115,7 +115,7 @@ def getDate(dates, promo, day, heure, minute):
     
     Returns:
         str: combined date-time value (formatted according to RFC3339).
-    """    
+    """
     plus = {"Dimanche": 0, "Lundi": 1, "Mardi": 2, "Mercredi": 3, "Jeudi": 4}
     dt = datetime.datetime.strptime(
         dates[promo], "%Y/%m/%d") + datetime.timedelta(
@@ -131,7 +131,7 @@ def perror(text):
     
     Args:
         text (str): string to be printed.
-    """    
+    """
     print(bcolors.FAIL + text + bcolors.ENDC)
 
 
@@ -141,15 +141,17 @@ def psuccess(text):
     
     Args:
         text (str): string to be printed.
-    """    
+    """
     print(bcolors.OKGREEN + text + bcolors.ENDC)
 
 
 def success_str(text):
     return "{} {} {}".format(bcolors.OKGREEN, text, bcolors.ENDC)
 
+
 def error_str(text):
     return "{} {} {}".format(bcolors.FAIL, text, bcolors.ENDC)
+
 
 def info_str(text):
     return "{} {} {}".format(bcolors.OKBLUE, text, bcolors.ENDC)
@@ -163,7 +165,7 @@ def check_google_calendar_id(google_cal_id):
     
     Returns:
         bool: True if the string in parameter is a verified google calendar id, else returns False 
-    """    
+    """
     return bool(
         re.match(r"esi\.dz_[a-z0-9]{26}@group\.calendar\.google\.com",
                  google_cal_id))

@@ -13,11 +13,11 @@ from fet_api_to_gcal.models import Calendar, Resource, Std_mail, Teacher
 # TODO: add an arguemt parser to script.
 
 dates = {
-    "2CPI": "2020/02/23",  # ! needs to be changed accordingly!
-    "1CS": "2020/02/23",  # ! needs to be changed accordingly!
-    "2CS": "2020/02/23",  # ! needs to be changed accordingly!
-    "3CS": "2020/02/23",  # ! needs to be changed accordingly!
-    "1CPI": "2020/02/23",  # ! needs to be changed accordingly!
+    "2CPI": "2020/04/26",  # ! needs to be changed accordingly!
+    "1CS": "2020/04/26",  # ! needs to be changed accordingly!
+    "2CS": "2020/04/26",  # ! needs to be changed accordingly!
+    "3CS": "2020/04/26",  # ! needs to be changed accordingly!
+    "1CPI": "2020/04/26",  # ! needs to be changed accordingly!
 }
 
 
@@ -150,7 +150,7 @@ def check_timetable_validity(timetable_path,
                         .format(std_set__)))
 
         # add room if existing
-
+        """
         if event___old["room"] != "":
             res = Resource.query.filter_by(
                 resource_name=event___old["room"]).first()
@@ -166,7 +166,7 @@ def check_timetable_validity(timetable_path,
         else:
             logging.warning(
                 error_str("Room at event index {} is empty".format(event_inx)))
-
+        """
         # ? recurrence rule
         __gevent__["recurrence"] = [
             "RRULE:FREQ=WEEKLY;COUNT=" + str(events_freq)
@@ -188,7 +188,7 @@ def check_timetable_validity(timetable_path,
             "dateTime": dateTime_end,
         }
         all_events.append(__gevent__)
-
+        print(__gevent__)
         if len(all_events) == max_events:
             logging.info(
                 success_str(

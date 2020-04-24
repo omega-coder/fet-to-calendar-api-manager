@@ -34,11 +34,11 @@ ALLOWED_EXTENSIONS = set(['csv'])
 app.config["ALLOWED_EXTENSIONS"] = ALLOWED_EXTENSIONS
 
 dates = {
-    "1CPI": "2020/02/23",
-    "2CPI": "2020/02/23",
-    "1CS": "2020/02/23",
-    "2CS": "2020/02/23",
-    "3CS": "2020/02/23"
+    "1CPI": "2020/04/26",
+    "2CPI": "2020/04/26",
+    "1CS": "2020/04/26",
+    "2CS": "2020/04/26",
+    "3CS": "2020/04/26"
 }
 
 
@@ -81,7 +81,6 @@ import sys
 class VerifyFileThread(threading.Thread):
     def __init__(self):
         self.test = 1
-
 
 
 @app.route("/progress/thread/<int:thread_id>")
