@@ -188,7 +188,6 @@ def check_timetable_validity(timetable_path,
             "dateTime": dateTime_end,
         }
         all_events.append(__gevent__)
-        print(__gevent__)
         if len(all_events) == max_events:
             logging.info(
                 success_str(
