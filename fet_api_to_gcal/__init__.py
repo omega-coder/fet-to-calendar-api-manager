@@ -479,6 +479,7 @@ def import_csv_to_calendar_api():
                 print(e)
             db.session.commit()
             all_events = csv_tt_to_json_events(file__path,
+                                               dates,
                                                max_events=max_events,
                                                events_freq=events_freq)
             for event in all_events:
@@ -841,7 +842,7 @@ def csv_tt_to_json_events(filename, dates, events_freq=1, max_events=None):
                     {"email": std_mails_obj.std_email})
 
         # add room if existing
-
+        """
         if event___old["room"] != "":
             res = Resource.query.filter_by(
                 resource_name=event___old["room"]).first()
@@ -852,6 +853,7 @@ def csv_tt_to_json_events(filename, dates, events_freq=1, max_events=None):
                 })
         else:
             perror("Room empty in event index : {}".format(event_inx))
+        """
         # recurrence rule
         __gevent__["recurrence"] = [
             "RRULE:FREQ=WEEKLY;COUNT=" + str(events_freq)
